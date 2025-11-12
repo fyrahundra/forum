@@ -1,6 +1,4 @@
 <script>
-	import favicon from '$lib/assets/favicon.svg';
-
 	export let data; // Kommer från +layout.server.ts
 </script>
 

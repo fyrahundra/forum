@@ -33,6 +33,7 @@ export async function requireAuth(cookies: any) {
 export async function getUser(cookies: any) {
 	// Din uppgift: Som requireAuth men utan redirect
 	// Returnera user eller null
+
 	const userId = cookies.get('userId');
 
 	if (!userId) {
