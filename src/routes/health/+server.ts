@@ -1,5 +1,10 @@
-export async function GET() {
+import type { RequestHandler } from '@sveltejs/kit';
+import { prisma } from '$lib';
+
+export const GET: RequestHandler = async () => {
 	try {
+		await prisma.$queryRaw`SELECT 1`; // Simple query to check DB connectivity
+
 		return new Response(
 			JSON.stringify({
 				status: 'ok',
