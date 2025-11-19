@@ -10,7 +10,8 @@
 		"prepare": "svelte-kit sync || echo ''",
 		"format": "prettier --write .",
 		"lint": "prettier --check . && eslint .",
-		"start": "node build"
+		"start": "node build",
+		"test": "mocha"
 	},
 	"devDependencies": {
 		"@eslint/compat": "^1.2.5",
