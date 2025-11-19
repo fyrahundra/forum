@@ -2,8 +2,7 @@
 	export let data; // Kommer från +layout.server.ts
 </script>
 
-<svelte:head>
-</svelte:head>
+<svelte:head></svelte:head>
 
 <nav class="main-nav">
 	<div class="nav-left">
@@ -18,7 +17,6 @@
 	<div class="nav-right">
 		<!-- Din uppgift: Implementera conditional navigation -->
 		{#if data.user}
-			<span>Välkommen, {data.user.username}!</span>
 			<!-- Logout-knapp som anropar logout action -->
 			<form method="POST" action="login?/logout" style="display: inline;">
 				<button type="submit">Logga ut</button>

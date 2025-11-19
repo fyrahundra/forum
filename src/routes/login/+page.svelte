@@ -5,7 +5,7 @@
 	export let form;
 
 	let currentView = 'login';
-	
+
 	$: isLogin = currentView === 'login';
 
 	$: action = isLogin ? '?/login' : '?/register';

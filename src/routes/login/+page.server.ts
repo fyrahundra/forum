@@ -28,10 +28,10 @@ export const actions: Actions = {
 
 		// Din uppgift: Kolla om användaren redan finns
 		const existingUser = await prisma.user.findUnique({
-			where: { 
-        username: username, 
-        email: email
-      }
+			where: {
+				username: username,
+				email: email
+			}
 		});
 
 		if (existingUser) {
