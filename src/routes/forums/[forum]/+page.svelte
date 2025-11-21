@@ -1,5 +1,6 @@
 <!-- src/routes/forums/[forum]/+page.svelte -->
 <script>
+	import { resolve } from '$app/paths';
 	import { enhance } from '$app/forms';
 	import { writable } from 'svelte/store';
 	import { fly } from 'svelte/transition';
@@ -30,7 +31,7 @@
 	<h1>Forum: {forumName}</h1>
 
 	<nav>
-		<a href="/forums">Alla Forum</a> | {forumName}
+		<a href={resolve("/forums")}>Alla Forum</a> | {forumName}
 	</nav>
 
 	<article>
@@ -39,7 +40,7 @@
 		>
 			<!-- Lista meddelanden -->
 			<h2>Meddelanden ({liveMessages.length})</h2>
-			{#each liveMessages as message}
+			{#each liveMessages as message (message.id)}
 				<div class="message" in:fly={{ y: 20 }}>
 					<!-- Visa meddelande här -->
 					<div
@@ -79,14 +80,14 @@
 
 		<nav style="display: flex; justify-content: space-between;">
 			{#if data.page > 1}
-				<a href={`?page=${data.page - 1}`}>Föregående</a>
+				<a href={resolve(`?page=${data.page - 1}`)}>Föregående</a>
 			{:else}
 				<span>Föregående</span>
 			{/if}
 			<span> Sida {data.page} av {data.totalPages} </span>
 
 			{#if data.page < data.totalPages}
-				<a href={`?page=${data.page + 1}`}>Nästa</a>
+				<a href={resolve(`?page=${data.page + 1}`)}>Nästa</a>
 			{:else}
 				<span>Nästa</span>
 			{/if}

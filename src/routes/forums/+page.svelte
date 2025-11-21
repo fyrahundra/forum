@@ -1,5 +1,6 @@
 <!-- src/routes/forums/+page.svelte -->
 <script>
+	import { resolve } from '$app/paths';
 	import { enhance } from '$app/forms';
 	import { browser } from '$app/environment';
 	import { invalidateAll } from '$app/navigation';
@@ -40,7 +41,7 @@
 				<p>{liveData.length === 0 ? 'Inga forum tillgängliga. Skapa ett nytt forum!' : ''}</p>
 				{#each liveData as forum (forum.id)}
 					<!-- Länka till varje forum -->
-					<a href={`/forums/${forum.name}`}>Forum: {forum.name}</a>
+					<a href={resolve(`/forums/${forum.name}`)}>Forum: {forum.name}</a>
 					{#if forum.id === editingID}
 						<form
 							action="?/edit"
@@ -86,13 +87,13 @@
 			</section>
 			<nav style="display: flex; width: 100%; justify-content: space-between;">
 				{#if data.page > 1}
-					<a href={`?page=${data.page - 1}`}>Föregående</a>
+					<a href={resolve(`?page=${data.page - 1}`)}>Föregående</a>
 				{:else}
 					<span>Föregående</span>
 				{/if}
 				<span> Sida {data.page} av {data.totalPages} </span>
 				{#if data.page < data.totalPages}
-					<a href={`?page=${data.page + 1}`}>Nästa</a>
+					<a href={resolve(`?page=${data.page + 1}`)}>Nästa</a>
 				{:else}
 					<span>Nästa</span>
 				{/if}

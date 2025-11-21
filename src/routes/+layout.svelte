@@ -1,4 +1,8 @@
+
+
 <script>
+	import { resolve } from '$app/paths';
+
 	export let data; // Kommer från +layout.server.ts
 </script>
 
@@ -6,11 +10,11 @@
 
 <nav class="main-nav">
 	<div class="nav-left">
-		<a href="/">Hem</a>
+		<a href={resolve("/")}>Hem</a>
 		<!-- Din uppgift: Visa olika navigation beroende på om användaren är inloggad -->
 		{#if data.user}
-			<a href="/dashboard">Dashboard</a>
-			<a href="/profile">Profil</a>
+			<a href={resolve("/dashboard")}>Dashboard</a>
+			<a href={resolve("/profile")}>Profil</a>
 		{/if}
 	</div>
 
@@ -23,7 +27,7 @@
 			</form>
 		{:else}
 			<!-- Länk till login för ej inloggade -->
-			<a href="/login">Logga In</a>
+			<a href={resolve("/login")}>Logga In</a>
 		{/if}
 	</div>
 </nav>
