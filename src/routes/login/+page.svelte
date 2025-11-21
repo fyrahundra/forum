@@ -1,6 +1,5 @@
 <script>
 	import { enhance } from '$app/forms';
-	import { createClassComponent } from 'svelte/legacy';
 
 	export let form;
 
@@ -22,7 +21,7 @@
 		use:enhance={() => {
 			// Din uppgift: Vad ska hända när form submits?
 			loading = true;
-			return async ({ result, update }) => {
+			return async ({ update }) => {
 				loading = false;
 				await update();
 			};

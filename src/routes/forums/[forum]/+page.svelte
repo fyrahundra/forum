@@ -100,7 +100,6 @@
 		<form
 			method="POST"
 			action="?/message"
-			onsubmit={() => console.log('Form submitted', liveData)}
 			use:enhance
 		>
 			<!-- Lägg till input-fält för meddelande här -->

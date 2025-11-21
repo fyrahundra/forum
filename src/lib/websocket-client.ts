@@ -30,7 +30,9 @@ class WebSocketClient {
 		try {
 			const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
 			const host = window.location.hostname;
-			const wsUrl = `${protocol}//${host}:3001/websocket`;
+			const wsUrl = browser 
+				?`${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/websocket`
+				: null//`${protocol}//${host}:3001/websocket`;
 
 			this.ws = new WebSocket(wsUrl);
 
