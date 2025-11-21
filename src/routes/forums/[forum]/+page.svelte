@@ -117,7 +117,6 @@
 			<button type="submit">Sök</button>
 		</form>
 	</article>
-	nksnkfnaknfkand
 </div>
 
 <style>
