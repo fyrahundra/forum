@@ -31,13 +31,21 @@ class WebSocketClient {
 		if (this.ws && (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING)) return;
 
 		try {
-			const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-			// In dev we run the WS server on :3001; in prod use same origin path.
-			const wsUrl = dev
-				? `${protocol}//${window.location.hostname}:3001/websocket`
-				: `${protocol}//${window.location.host}/websocket`;
+			// robust URL:
+			// - dev => explicit :3001 standalone server
+			// - prod => same-origin wss/ws + /websocket path
+			let wsUrl: string;
+			if (dev) {
+				const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+				wsUrl = `${proto}//${window.location.hostname}:3001/websocket`;
+			} else {
+				// use location.origin and swap protocol -> ws/wss
+				const origin = window.location.origin;
+				const wsOrigin = origin.replace(/^http/, 'ws');
+				wsUrl = `${wsOrigin.replace(/\/$/, '')}/websocket`;
+			}
 
-			if (!wsUrl) throw new Error('Invalid websocket URL');
+			console.debug('Attempting WebSocket connection to', wsUrl);
 
 			this.ws = new WebSocket(wsUrl);
 
