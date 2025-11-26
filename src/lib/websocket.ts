@@ -25,6 +25,12 @@ class WebSocketManager {
 
 	broadcast(forumsMessage: WebSocketData) {
 		const forumsMessageString = JSON.stringify(forumsMessage);
+		console.log(
+			'WS broadcast:',
+			typeof forumsMessage === 'object' ? (forumsMessage as any).type : null,
+			'clients:',
+			this.clients.size
+		);
 
 		for (const client of this.clients) {
 			if (client.readyState === 1) {

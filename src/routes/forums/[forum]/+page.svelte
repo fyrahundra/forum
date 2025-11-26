@@ -3,7 +3,7 @@
 	import { resolve } from '$app/paths';
 	import { enhance } from '$app/forms';
 	import { fly } from 'svelte/transition';
-	import { wsClient, wsMessages } from '$lib/websocket-client';
+	import { wsClient, wsMessages, wsConnected } from '$lib/websocket-client';
 	import { onDestroy, onMount } from 'svelte';
 
 	export let data, form;
@@ -22,11 +22,43 @@
 	});
 
 	let editingId = null;
+
+	// Fallback: POST via fetch and reload on success (use when WS doesn't notify)
+	async function submitMessage(event) {
+		event.preventDefault();
+		const form = event.currentTarget;
+		const fd = new FormData(form);
+		try {
+			const res = await fetch(form.action || '?/message', {
+				method: 'POST',
+				body: fd,
+				credentials: 'include'
+			});
+			if (res.ok || res.status === 303) {
+				// if server redirected, follow or otherwise reload to show the new message
+				const loc = res.headers.get('location');
+				if (loc) return (window.location.href = loc);
+				return location.reload();
+			}
+			// attempt to surface server error
+			let payload = null;
+			try { payload = await res.json(); } catch {}
+			console.error('Message post failed', res.status, payload);
+			alert(payload?.error || `Failed to post message (${res.status})`);
+		} catch (err) {
+			console.error('Network error posting message', err);
+			alert('Network error while posting message');
+		}
+	}
 </script>
 
 <!-- Breadcrumb navigation -->
 
 <div class="container">
+	<!-- show connection status for debugging -->
+	<div style="position: absolute; top: 8px; right: 8px; font-size: 0.9rem;">
+		WS: { $wsConnected ? 'connected' : 'disconnected' }
+	</div>
 	<h1>Forum: {forumName}</h1>
 
 	<nav>
@@ -95,8 +127,8 @@
 		{#if form?.error}
 			<p>{form.error}</p>
 		{/if}
-		<!-- Form för nytt meddelande -->
-		<form method="POST" action="?/message" use:enhance>
+		<!-- Form för nytt meddelande (uses fetch + reload fallback) -->
+		<form method="POST" action="?/message" on:submit={submitMessage}>
 			<!-- Lägg till input-fält för meddelande här -->
 			<div style="display: flex; flex-direction: column; margin-bottom: 10px; margin-top: 10px;">
 				<textarea name="content" id="" required placeholder="Ditt meddelande..."
