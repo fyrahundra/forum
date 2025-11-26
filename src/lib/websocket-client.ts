@@ -50,10 +50,21 @@ class WebSocketClient {
 			this.ws.onmessage = (event) => {
 				try {
 					const message: WebSocketData = JSON.parse(event.data);
+					console.debug('WS message received:', message);
 					if (message.type === 'forum_update') {
 						wsForums.set(message.forums);
 					} else if (message.type === 'message_update') {
-						wsMessages.set(message.message);
+						// Ensure createdAt fields are Date objects for UI code that calls toLocaleString()
+						const normalized = message.message.map((m) => {
+							// m.createdAt may be a string (from JSON) or a Date (if already)
+							const created = (m as any).createdAt;
+							return {
+								...m,
+								createdAt: created ? new Date(created) : new Date()
+							};
+						});
+
+						wsMessages.set(normalized);
 					}
 				} catch (error) {
 					console.error('Error parsing WebSocket message:', error);
