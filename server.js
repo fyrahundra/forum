@@ -11,9 +11,7 @@ const server = createServer((req, res) => {
 });
 
 // Attach standalone WebSocket server
-const wss = attachWebSocketServer(server);
-console.log('WS attached to server, currently connected clients:', wss.clients.size);
-
+attachWebSocketServer(server);
 
 server.listen(PORT, () => {
     console.log(`Server listening on port ${PORT}`);

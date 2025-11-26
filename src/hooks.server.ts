@@ -22,9 +22,10 @@ if (!(globalThis as any).__wssInitialized) {
 				probe.close(() => {
 					const wss = new WebSocketServer({ port: WS_PORT, path: '/websocket' });
 					wss.on('connection', (ws) => {
+						console.log('[hooks] ws connection (attached)');
 						wsManager.addClient(ws);
-						ws.on('close', () => wsManager.removeClient(ws));
-						ws.on('error', () => wsManager.removeClient(ws));
+						ws.on('close', () => { console.log('[hooks] ws close'); wsManager.removeClient(ws); });
+						ws.on('error', (err) => { console.log('[hooks] ws error', err); wsManager.removeClient(ws); });
 					});
 					console.log(`Standalone WS server running on port ${WS_PORT}`);
 				});
@@ -44,9 +45,10 @@ export function attachWebSocketServer(server: HTTPServer) {
 	});
 
 	wss.on('connection', (ws) => {
+		console.log('[hooks] ws connection (attached)');
 		wsManager.addClient(ws);
-		ws.on('close', () => wsManager.removeClient(ws));
-		ws.on('error', () => wsManager.removeClient(ws));
+		ws.on('close', () => { console.log('[hooks] ws close'); wsManager.removeClient(ws); });
+		ws.on('error', (err) => { console.log('[hooks] ws error', err); wsManager.removeClient(ws); });
 	});
 
 	console.log('WS attached to HTTP server');

@@ -114,11 +114,22 @@ export class WebSocketManager {
 	removeClient(ws: NodeWebSocket) { this.clients.delete(ws); }
 
 	broadcast(msg: WebSocketData) {
-		const msgStr = JSON.stringify(msg);
-		for (const client of this.clients) {
-			if (client.readyState === client.OPEN) {
-				try { client.send(msgStr); } catch { this.clients.delete(client); }
-			} else this.clients.delete(client);
+		// Debugging: log outgoing message and how many clients
+		try {
+			const msgStr = JSON.stringify(msg);
+			console.log('[ws] broadcasting', msg.type, 'to', this.clients.size, 'clients');
+			// Also log a short preview
+			console.debug('[ws] payload preview', msgStr.length > 200 ? msgStr.slice(0, 200) + '…' : msgStr);
+			for (const client of this.clients) {
+				if (client.readyState === client.OPEN) {
+					try { client.send(msgStr); } catch (e) { 
+						console.warn('[ws] send failed, removing client', e);
+						this.clients.delete(client);
+					}
+				} else this.clients.delete(client);
+			}
+		} catch (err) {
+			console.error('[ws] broadcast error', err);
 		}
 	}
 
