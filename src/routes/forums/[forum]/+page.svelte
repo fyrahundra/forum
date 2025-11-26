@@ -33,6 +33,15 @@
 		<a href={resolve('/forums')}>Alla Forum</a> | {forumName}
 	</nav>
 
+	<div>
+		WebSocket status:
+		{#if $wsConnected}
+			<span style="color: green;">Connected ✅</span>
+		{:else}
+			<span style="color: red;">Disconnected ❌</span>
+		{/if}
+	</div>
+
 	<article>
 		<section
 			style="overflow-y: scroll; height: 60vh; width: 100%; min-width: 600px; max-width: 600px; border: 1px solid #ccc; padding: 10px; box-sizing: border-box;"

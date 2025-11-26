@@ -5,9 +5,7 @@
 	import { browser } from '$app/environment';
 	import { onDestroy, onMount } from 'svelte';
 	import { fly } from 'svelte/transition';
-	import { wsConnected } from '$lib/websocket';
-
-	import { wsClient, wsForums } from '$lib/websocket-client.js';
+	import { wsClient, wsForums, wsConnected } from '$lib/websocket-client.js';
 
 	export let data, form;
 
