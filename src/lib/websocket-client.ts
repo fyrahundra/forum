@@ -1,5 +1,5 @@
 import { writable } from 'svelte/store';
-import { browser } from '$app/environment';
+import { browser, dev } from '$app/environment';
 import type { Forum, Message } from '@prisma/client';
 
 export interface WebSocketForums {
@@ -27,12 +27,17 @@ class WebSocketClient {
 	connect() {
 		if (!browser) return;
 
+		// prevent duplicate attempts if already connecting/open
+		if (this.ws && (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING)) return;
+
 		try {
 			const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-			const host = window.location.hostname;
-			const wsUrl = browser 
-				?`${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/websocket`
-				: null//`${protocol}//${host}:3001/websocket`;
+			// In dev we run the WS server on :3001; in prod use same origin path.
+			const wsUrl = dev
+				? `${protocol}//${window.location.hostname}:3001/websocket`
+				: `${protocol}//${window.location.host}/websocket`;
+
+			if (!wsUrl) throw new Error('Invalid websocket URL');
 
 			this.ws = new WebSocket(wsUrl);
 

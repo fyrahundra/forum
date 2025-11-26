@@ -2,9 +2,8 @@
 <script>
 	import { resolve } from '$app/paths';
 	import { enhance } from '$app/forms';
-	import { writable } from 'svelte/store';
 	import { fly } from 'svelte/transition';
-	import { wsClient, wsConnected, wsForums, wsMessages } from '$lib/websocket-client.js';
+	import { wsClient, wsMessages } from '$lib/websocket-client';
 	import { onDestroy, onMount } from 'svelte';
 
 	export let data, form;
@@ -31,7 +30,7 @@
 	<h1>Forum: {forumName}</h1>
 
 	<nav>
-		<a href={resolve("/forums")}>Alla Forum</a> | {forumName}
+		<a href={resolve('/forums')}>Alla Forum</a> | {forumName}
 	</nav>
 
 	<article>
@@ -97,11 +96,7 @@
 			<p>{form.error}</p>
 		{/if}
 		<!-- Form för nytt meddelande -->
-		<form
-			method="POST"
-			action="?/message"
-			use:enhance
-		>
+		<form method="POST" action="?/message" use:enhance>
 			<!-- Lägg till input-fält för meddelande här -->
 			<div style="display: flex; flex-direction: column; margin-bottom: 10px; margin-top: 10px;">
 				<textarea name="content" id="" required placeholder="Ditt meddelande..."

@@ -3,10 +3,9 @@
 	import { resolve } from '$app/paths';
 	import { enhance } from '$app/forms';
 	import { browser } from '$app/environment';
-	import { invalidateAll } from '$app/navigation';
 	import { onDestroy, onMount } from 'svelte';
 	import { fly } from 'svelte/transition';
-	import { wsClient, wsConnected, wsForums } from '$lib/websocket-client.js';
+	import { wsClient, wsForums } from '$lib/websocket-client.js';
 
 	export let data, form;
 
@@ -23,7 +22,7 @@
 		wsClient.disconnect();
 	});
 
-	$: liveData = $wsForums ?? data.forums;
+	$: liveData = $wsForums ?? data.forums; 
 
 	let editingID = null;
 </script>

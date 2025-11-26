@@ -1,11 +1,11 @@
 <script>
-import { resolve } from '$app/paths';
+	import { resolve } from '$app/paths';
 </script>
 
 <h1>
 	Välkommen!
 	<p>Utforska våra forum och delta i diskussionerna!</p>
-	<a href={resolve("/forums")}>Tillbaka till forumen</a>
+	<a href={resolve('/forums')}>Tillbaka till forumen</a>
 	<br />
 	<p>(Tryck på meddelanden för att kunna uppdatera dem)</p>
 </h1>

@@ -1,6 +1,6 @@
 import { WebSocketServer } from 'ws';
 import type { Handle } from '@sveltejs/kit';
-import { wsManager } from '$lib/websocket.js';
+import { wsManager } from '$lib/websocket';
 
 let wss: WebSocketServer | null = null;
 
