@@ -7,8 +7,14 @@ import type { WebSocket as NodeWebSocket } from 'ws'; // Node.js WS for server m
 // -------------------
 // Types
 // -------------------
-export interface WebSocketForums { type: 'forum_update'; forums: Forum[]; }
-export interface WebSocketMessage { type: 'message_update'; message: Message[]; }
+export interface WebSocketForums {
+	type: 'forum_update';
+	forums: Forum[];
+}
+export interface WebSocketMessage {
+	type: 'message_update';
+	message: Message[];
+}
 export type WebSocketData = WebSocketForums | WebSocketMessage;
 
 // -------------------
@@ -29,7 +35,11 @@ class WebSocketClient {
 
 	connect() {
 		if (!browser) return; // Only run in browser
-		if (this.ws && (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING)) return;
+		if (
+			this.ws &&
+			(this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING)
+		)
+			return;
 
 		try {
 			let wsUrl: string;
@@ -100,19 +110,29 @@ export const wsClient = new WebSocketClient();
 export class WebSocketManager {
 	private clients = new Set<NodeWebSocket>();
 
-	addClient(ws: NodeWebSocket) { this.clients.add(ws); }
-	removeClient(ws: NodeWebSocket) { this.clients.delete(ws); }
+	addClient(ws: NodeWebSocket) {
+		this.clients.add(ws);
+	}
+	removeClient(ws: NodeWebSocket) {
+		this.clients.delete(ws);
+	}
 
 	broadcast(msg: WebSocketData) {
 		const msgStr = JSON.stringify(msg);
 		for (const client of this.clients) {
 			if (client.readyState === client.OPEN) {
-				try { client.send(msgStr); } catch { this.clients.delete(client); }
+				try {
+					client.send(msgStr);
+				} catch {
+					this.clients.delete(client);
+				}
 			} else this.clients.delete(client);
 		}
 	}
 
-	getClientCount() { return this.clients.size; }
+	getClientCount() {
+		return this.clients.size;
+	}
 }
 
 export const wsManager = new WebSocketManager();

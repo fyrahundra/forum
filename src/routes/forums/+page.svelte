@@ -5,6 +5,8 @@
 	import { browser } from '$app/environment';
 	import { onDestroy, onMount } from 'svelte';
 	import { fly } from 'svelte/transition';
+	import { wsConnected } from '$lib/websocket';
+
 	import { wsClient, wsForums } from '$lib/websocket-client.js';
 
 	export let data, form;
@@ -22,13 +24,22 @@
 		wsClient.disconnect();
 	});
 
-	$: liveData = $wsForums ?? data.forums; 
+	$: liveData = $wsForums ?? data.forums;
 
 	let editingID = null;
 </script>
 
 <div class="container">
 	<h1>Forum ({liveData.length} totalt)</h1>
+
+	<div>
+		WebSocket status:
+		{#if $wsConnected}
+			<span style="color: green;">Connected ✅</span>
+		{:else}
+			<span style="color: red;">Disconnected ❌</span>
+		{/if}
+	</div>
 
 	{#if form?.error}
 		<p>{form.error}</p>

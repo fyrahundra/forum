@@ -28,7 +28,11 @@ class WebSocketClient {
 		if (!browser) return;
 
 		// prevent duplicate attempts if already connecting/open
-		if (this.ws && (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING)) return;
+		if (
+			this.ws &&
+			(this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING)
+		)
+			return;
 
 		try {
 			// robust URL:

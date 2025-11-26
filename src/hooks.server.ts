@@ -5,7 +5,8 @@ import { wsManager } from '$lib/websocket';
 import * as net from 'net';
 import type { Server as HTTPServer } from 'http';
 
-const WS_MODE = process.env.WS_MODE ?? (process.env.NODE_ENV === 'production' ? 'attach' : 'standalone');
+const WS_MODE =
+	process.env.WS_MODE ?? (process.env.NODE_ENV === 'production' ? 'attach' : 'standalone');
 const WS_PORT = parseInt(process.env.WS_PORT || '3001', 10);
 
 // Prevent multiple WS servers in hot reloads
@@ -14,7 +15,8 @@ if (!(globalThis as any).__wssInitialized) {
 
 	try {
 		if (WS_MODE === 'standalone') {
-			const probe = net.createServer()
+			const probe = net
+				.createServer()
 				.once('error', (err: any) => {
 					if (err.code === 'EADDRINUSE') {
 						console.warn(`WS port ${WS_PORT} in use. Skipping standalone server.`);
