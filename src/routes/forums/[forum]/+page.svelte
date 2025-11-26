@@ -128,7 +128,7 @@
 			<p>{form.error}</p>
 		{/if}
 		<!-- Form för nytt meddelande (uses fetch + reload fallback) -->
-		<form method="POST" action="?/message" on:submit={submitMessage}>
+		<form method="POST" action="?/message" onsubmit={submitMessage}>
 			<!-- Lägg till input-fält för meddelande här -->
 			<div style="display: flex; flex-direction: column; margin-bottom: 10px; margin-top: 10px;">
 				<textarea name="content" id="" required placeholder="Ditt meddelande..."
