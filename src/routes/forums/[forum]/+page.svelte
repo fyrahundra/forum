@@ -3,7 +3,8 @@
 	import { resolve } from '$app/paths';
 	import { enhance } from '$app/forms';
 	import { fly } from 'svelte/transition';
-	import { wsClient, wsMessages, wsConnected } from '$lib/websocket-client';
+	import { wsConnected } from '$lib/websocket';
+	import { wsClient, wsMessages } from '$lib/websocket-client';
 	import { onDestroy, onMount } from 'svelte';
 
 	export let data, form;
