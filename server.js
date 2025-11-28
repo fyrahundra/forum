@@ -10,7 +10,7 @@ const wss = new WebSocketServer({ noServer: true });
 
 // Attach upgrade handler
 server.on('upgrade', (req, socket, head) => {
-    if (req.url === '/ws') {
+    if (req.url === '/websocket') {
         wss.handleUpgrade(req, socket, head, ws => {
             wss.emit('connection', ws, req);
         });
