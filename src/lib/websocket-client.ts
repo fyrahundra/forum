@@ -41,12 +41,12 @@ class WebSocketClient {
 			let wsUrl: string;
 			if (dev) {
 				const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-				wsUrl = `${proto}//${window.location.hostname}:3001/ws`;
+				wsUrl = `${proto}//${window.location.hostname}:3001/websocket`;
 			} else {
 				// use location.origin and swap protocol -> ws/wss
 				const origin = window.location.origin;
 				const wsOrigin = origin.replace(/^http/, 'ws');
-				wsUrl = `${wsOrigin.replace(/\/$/, '')}/ws`;
+				wsUrl = `${wsOrigin.replace(/\/$/, '')}/websocket`;
 			}
 
 			console.debug('Attempting WebSocket connection to', wsUrl);
