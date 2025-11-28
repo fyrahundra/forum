@@ -19,7 +19,7 @@ export function attachWebSocketServer(server: HTTPServer) {
 		// Send current state immediately
 		const forums = await prisma.forum.findMany();
 		const messages = await prisma.message.findMany();
-		wsManager.sendCurrentState(ws, forums, messages);
+		wsManager.sendCurrentState(ws);
 
 		ws.on('close', () => {
 			console.log('[hooks] ws close');
