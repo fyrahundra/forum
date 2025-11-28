@@ -10,8 +10,10 @@ export type WebSocketData = WebSocketForums | WebSocketMessage;
 export class WebSocketManager {
     private clients = new Set<NodeWebSocket>();
 
-    addClient(ws: NodeWebSocket) { this.clients.add(ws); }
-    removeClient(ws: NodeWebSocket) { this.clients.delete(ws); }
+    addClient(ws: NodeWebSocket) { this.clients.add(ws); console.log('[wsManager] added client, total:', this.clients.size);
+}
+    removeClient(ws: NodeWebSocket) { this.clients.delete(ws); console.log('[wsManager] removed client, total:', this.clients.size);
+}
 
     broadcast(msg: WebSocketData) {
         try {
