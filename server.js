@@ -13,6 +13,7 @@ server.on('upgrade', (req, socket, head) => {
     if (req.url === '/websocket') {
         wss.handleUpgrade(req, socket, head, ws => {
             wss.emit('connection', ws, req);
+            console.log('[upgrade] incoming request to', req.url);
         });
     } else {
         socket.destroy();
