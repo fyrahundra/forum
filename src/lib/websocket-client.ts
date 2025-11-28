@@ -24,12 +24,8 @@ class WebSocketClient {
 			return;
 
 		let wsUrl = '';
-		if (dev) {
-			const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-			wsUrl = `${proto}//${window.location.hostname}:3000/websocket`;
-		} else {
-			wsUrl = window.location.origin.replace(/^http/, 'ws') + '/websocket';
-		}
+		const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+		wsUrl = `${protocol}//${window.location.host}/websocket`;
 
 		this.ws = new WebSocket(wsUrl);
 

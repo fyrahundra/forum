@@ -2,7 +2,7 @@
 import { createServer } from 'http';
 import { handler } from './build/handler.js';
 import { WebSocketServer } from 'ws';
-import { wsManager } from './src/lib/websocket.js'; // same manager
+import { wsManager } from './lib/websocket.js'; // same manager
 
 const PORT = process.env.PORT || 3000;
 

@@ -71,4 +71,7 @@ export class WebSocketManager {
 }
 
 // single instance for whole server
-export const wsManager = new WebSocketManager();
+export const wsManager = (globalThis as any).wsManager || new WebSocketManager();
+if (process.env.NODE_ENV !== 'production') {
+	(globalThis as any).wsManager = wsManager;
+}
