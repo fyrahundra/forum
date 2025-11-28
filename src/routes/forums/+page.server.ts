@@ -56,6 +56,7 @@ export const actions = {
 				}
 			});
 
+			console.log('[action] broadcasting forum_update, clients:', wsManager.getClientCount());
 			wsManager.broadcast({
 				type: 'forum_update',
 				forums: await prisma.forum.findMany({

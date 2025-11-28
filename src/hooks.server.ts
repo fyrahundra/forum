@@ -14,6 +14,8 @@ export function attachWebSocketServer(server: HTTPServer) {
     wss.on('connection', async (ws) => {
         console.log('[hooks] ws connection (attached)');
         wsManager.addClient(ws);
+		console.log('[hooks] total clients now:', wsManager.getClientCount());
+
 
         // Send current state immediately
         const forums = await prisma.forum.findMany();
