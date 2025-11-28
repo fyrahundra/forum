@@ -15,15 +15,27 @@ export class WebSocketManager {
 
     broadcast(msg: WebSocketData) {
         try {
-            const msgStr = JSON.stringify(msg);
-            console.log('[ws] broadcasting', msg.type, 'to', this.clients.size, 'clients');
-            for (const client of this.clients) {
-                if (client.readyState === client.OPEN) {
-                    try { client.send(msgStr); } catch {
-                        this.clients.delete(client);
-                    }
-                } else this.clients.delete(client);
-            }
+			const msgStr = JSON.stringify(msg);
+
+			// DEBUG: Log number of clients before sending
+			console.log('[ws] broadcasting', msg.type, 'to', this.clients.size, 'clients');
+			if (this.clients.size === 0) console.warn('[ws] No clients to broadcast to!');
+
+			for (const client of this.clients) {
+				console.log('[ws] client readyState:', client.readyState); // DEBUG
+				if (client.readyState === client.OPEN) {
+					try { 
+						client.send(msgStr); 
+						console.log('[ws] message sent to client'); // DEBUG
+					} catch (e) { 
+						console.warn('[ws] send failed, removing client', e);
+						this.clients.delete(client);
+					}
+				} else {
+					console.log('[ws] client not open, removing');
+					this.clients.delete(client);
+				}
+			}
         } catch (err) {
             console.error('[ws] broadcast error', err);
         }
