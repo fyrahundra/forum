@@ -3,7 +3,7 @@ import { prisma } from '$lib';
 import { fail } from '@sveltejs/kit';
 import { error } from '@sveltejs/kit';
 import type { ServerLoad, Actions } from '@sveltejs/kit';
-import { wsManager } from '$lib/websocket.js';
+import { wsManager } from '$lib/websocket';
 import { requireAuth } from '$lib/auth';
 
 export const load: ServerLoad = async ({ params, url, cookies }) => {
