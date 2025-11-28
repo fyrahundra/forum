@@ -2,58 +2,73 @@
 import type { WebSocket as NodeWebSocket } from 'ws';
 import type { Forum, Message } from '@prisma/client';
 
-// Existing types
-export interface WebSocketForums { type: 'forum_update'; forums: Forum[]; }
-export interface WebSocketMessage { type: 'message_update'; message: Message[]; }
+// -------------------
+// Types
+// -------------------
+export interface WebSocketForums {
+	type: 'forum_update';
+	forums: Forum[];
+}
+export interface WebSocketMessage {
+	type: 'message_update';
+	message: Message[];
+}
 export type WebSocketData = WebSocketForums | WebSocketMessage;
 
+// -------------------
+// Node.js WebSocket manager
+// -------------------
+// src/lib/websocket.ts
 export class WebSocketManager {
-    private clients = new Set<NodeWebSocket>();
+	private clients = new Set<NodeWebSocket>();
+	private currentForums: Forum[] = []; // store latest state
+	private currentMessages: Message[] = [];
 
-    addClient(ws: NodeWebSocket) { this.clients.add(ws); console.log('[wsManager] added client, total:', this.clients.size);
-}
-    removeClient(ws: NodeWebSocket) { this.clients.delete(ws); console.log('[wsManager] removed client, total:', this.clients.size);
-}
+	addClient(ws: NodeWebSocket) {
+		this.clients.add(ws);
+		// send current state when client connects
+		this.sendCurrentState(ws);
+	}
 
-    broadcast(msg: WebSocketData) {
-        try {
-			const msgStr = JSON.stringify(msg);
+	removeClient(ws: NodeWebSocket) {
+		this.clients.delete(ws);
+	}
 
-			// DEBUG: Log number of clients before sending
-			console.log('[ws] broadcasting', msg.type, 'to', this.clients.size, 'clients');
-			if (this.clients.size === 0) console.warn('[ws] No clients to broadcast to!');
+	broadcast(msg: WebSocketData) {
+		// store the latest state for new clients
+		if (msg.type === 'forum_update') this.currentForums = msg.forums;
+		if (msg.type === 'message_update') this.currentMessages = msg.message;
 
-			for (const client of this.clients) {
-				console.log('[ws] client readyState:', client.readyState); // DEBUG
-				if (client.readyState === client.OPEN) {
-					try { 
-						client.send(msgStr); 
-						console.log('[ws] message sent to client'); // DEBUG
-					} catch (e) { 
-						console.warn('[ws] send failed, removing client', e);
-						this.clients.delete(client);
-					}
-				} else {
-					console.log('[ws] client not open, removing');
+		const msgStr = JSON.stringify(msg);
+		console.log('[ws] broadcasting', msg.type, 'to', this.clients.size, 'clients');
+		for (const client of this.clients) {
+			if (client.readyState === client.OPEN) {
+				try {
+					client.send(msgStr);
+				} catch (e) {
 					this.clients.delete(client);
 				}
+			} else {
+				this.clients.delete(client);
 			}
-        } catch (err) {
-            console.error('[ws] broadcast error', err);
-        }
-    }
+		}
+	}
 
-    // Send current state to a single client
-    sendCurrentState(ws: NodeWebSocket, forums: Forum[], messages: Message[]) {
-        try {
-            ws.send(JSON.stringify({ type: 'forum_update', forums }));
-            ws.send(JSON.stringify({ type: 'message_update', message: messages }));
-        } catch (err) {
-            console.error('[ws] sendCurrentState error', err);
-        }
-    }
+	sendCurrentState(ws: NodeWebSocket) {
+		// send current forums
+		if (this.currentForums.length > 0) {
+			ws.send(JSON.stringify({ type: 'forum_update', forums: this.currentForums }));
+		}
+		// send current messages
+		if (this.currentMessages.length > 0) {
+			ws.send(JSON.stringify({ type: 'message_update', message: this.currentMessages }));
+		}
+	}
 
-    getClientCount() { return this.clients.size; }
+	getClientCount() {
+		return this.clients.size;
+	}
 }
 
+// single instance for whole server
 export const wsManager = new WebSocketManager();
