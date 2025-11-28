@@ -61,8 +61,11 @@ class WebSocketClient {
 
 			this.ws.onmessage = (event) => {
 				try {
-					const message: WebSocketData = JSON.parse(event.data);
-					console.debug('WS message received:', message);
+					console.log("WS RAW:", event.data);
+					const message = JSON.parse(event.data);
+					console.log("WS PARSED:", message);
+					//const message: WebSocketData = JSON.parse(event.data);
+					//console.debug('WS message received:', message);
 					if (message.type === 'forum_update') {
 						wsForums.set(message.forums);
 					} else if (message.type === 'message_update') {
