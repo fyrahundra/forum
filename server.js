@@ -6,7 +6,7 @@ const PORT = process.env.PORT || 3000;
 
 const server = createServer(handler);
 
-// Attach WebSocket server
+// attach WS server
 attachWebSocketServer(server);
 
 server.listen(PORT, '0.0.0.0', () => {

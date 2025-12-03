@@ -26,6 +26,7 @@
 		"prettier-plugin-svelte": "^3.3.3",
 		"prisma": "^6.19.0",
 		"svelte": "^5.0.0",
+		"typescript": "^5.9.3",
 		"vite": "^7.0.4"
 	},
 	"dependencies": {

@@ -1,21 +1,17 @@
-import { WebSocketServer, WebSocket } from 'ws';
+// ws-server.js
+import { WebSocketServer } from 'ws';
 import { wsManager } from './src/lib/websocket.js';
 import { prisma } from './src/lib/index.js';
-import type { IncomingMessage } from 'http';
-import type { Socket } from 'net';
 
-export function attachWebSocketServer(server: import('http').Server) {
+export function attachWebSocketServer(server) {
   const wss = new WebSocketServer({ noServer: true });
 
-  server.on('upgrade', (req: IncomingMessage, socket: Socket, head: Buffer) => {
+  server.on('upgrade', (req, socket, head) => {
     if (!req.url?.startsWith('/websocket')) return socket.destroy();
-
-    wss.handleUpgrade(req, socket, head, (ws: WebSocket) => {
-      wss.emit('connection', ws, req);
-    });
+    wss.handleUpgrade(req, socket, head, (ws) => wss.emit('connection', ws, req));
   });
 
-  wss.on('connection', async (ws: WebSocket) => {
+  wss.on('connection', async (ws) => {
     console.log('[ws] client connected');
     wsManager.addClient(ws);
 
@@ -24,7 +20,6 @@ export function attachWebSocketServer(server: import('http').Server) {
         include: { _count: { select: { messages: true } } },
         orderBy: { createdAt: 'desc' }
       });
-
       ws.send(JSON.stringify({ type: 'forum_update', forums }));
     } catch (err) {
       console.error('[ws] error sending initial data', err);
