@@ -1,6 +1,6 @@
 // ws-server.js
 import { WebSocketServer } from 'ws';
-import { wsManager } from './src/lib/websocket.js';
+import { wsManager } from './build/lib/websocket.js';
 import { prisma } from './src/lib/index.js';
 
 export function attachWebSocketServer(server) {
