@@ -1,7 +1,7 @@
 // server.js
 import { createServer } from 'http';
 import { handler } from './build/handler.js';
-import { attachWebSocketServer } from './.svelte-kit/output/server/chunks/hooks.server.js'; // <- JS output
+import { attachWebSocketServer } from './src/hooks.js';
 
 const PORT = process.env.PORT || 3000;
 
