@@ -1,6 +1,6 @@
 import type { Actions } from '@sveltejs/kit';
 import { prisma } from '$lib';
-import { error, fail, redirect } from '@sveltejs/kit';
+import { fail, redirect } from '@sveltejs/kit';
 
 export const actions: Actions = {
 	register: async ({ request, cookies }) => {

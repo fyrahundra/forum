@@ -1,9 +1,7 @@
 // src/routes/forums/[forum]/+page.server.ts
 import { prisma } from '$lib';
-import { fail } from '@sveltejs/kit';
-import { error } from '@sveltejs/kit';
+import { fail, error } from '@sveltejs/kit';
 import type { ServerLoad, Actions } from '@sveltejs/kit';
-import { wsManager } from '$lib/websocket';
 import { requireAuth } from '$lib/auth';
 
 export const load: ServerLoad = async ({ params, url, cookies }) => {
@@ -75,14 +73,6 @@ export const actions = {
 				}
 			});
 
-			wsManager.broadcast({
-				type: 'forum_update',
-				forums: await prisma.forum.findMany({
-					include: { _count: { select: { messages: true } } },
-					orderBy: { createdAt: 'desc' }
-				})
-			});
-
 			const updatedForum = await prisma.forum.findUnique({
 				where: { name: forumName },
 				include: {
@@ -94,15 +84,6 @@ export const actions = {
 			if (!updatedForum) {
 				return fail(404, { error: 'Forum hittades inte' });
 			}
-
-			wsManager.broadcast({
-				type: 'message_update',
-				message: await prisma.message.findMany({
-					where: { forumId: updatedForum.id },
-					orderBy: { createdAt: 'desc' },
-					take: 10
-				})
-			});
 
 			return { success: true };
 		} catch (error) {
@@ -121,22 +102,6 @@ export const actions = {
 			await prisma.message.delete({
 				where: { id: messageId }
 			});
-
-			wsManager.broadcast({
-				type: 'forum_update',
-				forums: await prisma.forum.findMany({
-					include: { _count: { select: { messages: true } } },
-					orderBy: { createdAt: 'desc' }
-				})
-			});
-
-			wsManager.broadcast({
-				type: 'message_update',
-				message: await prisma.message.findMany({
-					orderBy: { createdAt: 'desc' },
-					take: 10
-				})
-			});
 		} catch (error) {
 			return fail(500, { error: 'Något gick fel vid borttagning' });
 		}
@@ -153,13 +118,6 @@ export const actions = {
 			await prisma.message.update({
 				where: { id: messageId },
 				data: { content: newContent }
-			});
-			wsManager.broadcast({
-				type: 'message_update',
-				message: await prisma.message.findMany({
-					orderBy: { createdAt: 'desc' },
-					take: 10
-				})
 			});
 		} catch (error) {
 			return fail(500, { error: 'Något gick fel vid uppdatering' });

@@ -1,8 +1,7 @@
 // src/routes/forums/+page.server.ts
 import type { ServerLoad, Actions } from '@sveltejs/kit';
 import { prisma } from '$lib';
-import { error, fail } from '@sveltejs/kit';
-import { wsManager } from '$lib/websocket';
+import { fail } from '@sveltejs/kit';
 import { getUser, requireAuth } from '$lib/auth';
 
 export const load = (async ({ url, params, cookies }) => {
@@ -56,15 +55,6 @@ export const actions = {
 				}
 			});
 
-			console.log('[action] broadcasting forum_update, clients:', wsManager.getClientCount());
-			wsManager.broadcast({
-				type: 'forum_update',
-				forums: await prisma.forum.findMany({
-					include: { _count: { select: { messages: true } } },
-					orderBy: { createdAt: 'desc' }
-				})
-			});
-
 			return { success: true };
 		} catch (error) {
 			// Vad händer om forum-namnet redan finns?
@@ -87,14 +77,6 @@ export const actions = {
 			await prisma.forum.delete({
 				where: { id: forumId }
 			});
-
-			wsManager.broadcast({
-				type: 'forum_update',
-				forums: await prisma.forum.findMany({
-					include: { _count: { select: { messages: true } } },
-					orderBy: { createdAt: 'desc' }
-				})
-			});
 		} catch (error) {
 			console.error(error);
 			return fail(500, { error: 'Något gick fel vid borttagning' });
@@ -113,14 +95,6 @@ export const actions = {
 			await prisma.forum.update({
 				where: { id: forumId },
 				data: { description: newDescription }
-			});
-
-			wsManager.broadcast({
-				type: 'forum_update',
-				forums: await prisma.forum.findMany({
-					include: { _count: { select: { messages: true } } },
-					orderBy: { createdAt: 'desc' }
-				})
 			});
 		} catch (error) {
 			console.error(error);

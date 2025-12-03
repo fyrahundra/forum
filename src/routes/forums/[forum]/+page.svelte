@@ -3,23 +3,14 @@
 	import { resolve } from '$app/paths';
 	import { enhance } from '$app/forms';
 	import { fly } from 'svelte/transition';
-	import { wsClient, wsMessages, wsConnected } from '$lib/websocket-client';
 	import { onDestroy, onMount } from 'svelte';
 
 	export let data, form;
 
-	$: liveMessages = $wsMessages ?? data.messages;
+	$: liveMessages = data.messages;
 	let forumName = data.forum.name;
 
 	console.log(liveMessages);
-
-	onMount(() => {
-		wsClient.connect();
-	});
-
-	onDestroy(() => {
-		wsClient.disconnect();
-	});
 
 	let editingId = null;
 </script>
@@ -32,15 +23,6 @@
 	<nav>
 		<a href={resolve('/forums')}>Alla Forum</a> | {forumName}
 	</nav>
-
-	<div>
-		WebSocket status:
-		{#if $wsConnected}
-			<span style="color: green;">Connected ✅</span>
-		{:else}
-			<span style="color: red;">Disconnected ❌</span>
-		{/if}
-	</div>
 
 	<article>
 		<section

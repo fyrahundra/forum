@@ -5,24 +5,10 @@
 	import { browser } from '$app/environment';
 	import { onDestroy, onMount } from 'svelte';
 	import { fly } from 'svelte/transition';
-	import { wsClient, wsForums, wsConnected } from '$lib/websocket-client';
 
 	export let data, form;
 
-	onMount(() => {
-		wsClient.connect();
-		setInterval(() => {
-			if (browser) {
-				console.log(liveData);
-			}
-		}, 6000);
-	});
-
-	onDestroy(() => {
-		wsClient.disconnect();
-	});
-
-	$: liveData = $wsForums ?? data.forums;
+	$: liveData = data.forums;
 
 	let editingID = null;
 </script>
