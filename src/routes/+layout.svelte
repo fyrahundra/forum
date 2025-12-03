@@ -20,7 +20,7 @@
 		<!-- Din uppgift: Implementera conditional navigation -->
 		{#if data.user}
 			<!-- Logout-knapp som anropar logout action -->
-			<form method="POST" action="login?/logout" style="display: inline;">
+			<form method="POST" action="/logout" style="display: inline;">
 				<button type="submit">Logga ut</button>
 			</form>
 		{:else}
