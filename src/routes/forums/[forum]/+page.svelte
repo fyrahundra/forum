@@ -3,7 +3,6 @@
 	import { resolve } from '$app/paths';
 	import { enhance } from '$app/forms';
 	import { fly } from 'svelte/transition';
-	import { onDestroy, onMount } from 'svelte';
 
 	export let data, form;
 

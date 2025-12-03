@@ -2,8 +2,6 @@
 <script>
 	import { resolve } from '$app/paths';
 	import { enhance } from '$app/forms';
-	import { browser } from '$app/environment';
-	import { onDestroy, onMount } from 'svelte';
 	import { fly } from 'svelte/transition';
 
 	export let data, form;
@@ -15,15 +13,6 @@
 
 <div class="container">
 	<h1>Forum ({liveData.length} totalt)</h1>
-
-	<div>
-		WebSocket status:
-		{#if $wsConnected}
-			<span style="color: green;">Connected ✅</span>
-		{:else}
-			<span style="color: red;">Disconnected ❌</span>
-		{/if}
-	</div>
 
 	{#if form?.error}
 		<p>{form.error}</p>
