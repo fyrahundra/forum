@@ -1,41 +1,43 @@
-import { WebSocketServer, WebSocket } from 'ws';
-import { wsManager } from './websocket.js';
-import { prisma } from './index.js';
 import type { IncomingMessage } from 'http';
 import type { Socket } from 'net';
+import { WebSocketServer } from 'ws';
+import { wsManager } from './websocket';
 
-export function attachWebSocketServer(server: any) {
+export function attachWebSocketServer(server: import('http').Server) {
+    // prevent double-attach in dev/hmr
+    if ((globalThis as any).__wsAttached) return;
+    (globalThis as any).__wsAttached = true;
+
     const wss = new WebSocketServer({ noServer: true });
 
-    server.on('upgrade', (req: IncomingMessage, socket: Socket, head: Buffer) => {
-        if (!req.url?.startsWith('/websocket')) {
-            socket.destroy();
-            return;
-        }
+    wss.on('connection', (ws, req: IncomingMessage) => {
+        console.log('[ws] connection from', req.socket.remoteAddress);
+        wsManager.addClient(ws);
 
-        wss.handleUpgrade(req, socket, head, (ws: WebSocket) => {
-            wss.emit('connection', ws, req);
+        ws.on('close', () => {
+            console.log('[ws] client closed');
+            wsManager.removeClient(ws);
+        });
+
+        ws.on('message', (data) => {
+            // optional: basic ping handling
+            try {
+                const parsed = JSON.parse(data.toString());
+                if (parsed?.type === 'ping') ws.send(JSON.stringify({ type: 'pong' }));
+            } catch {
+                // ignore non-JSON payloads
+            }
         });
     });
 
-    wss.on('connection', async (ws: WebSocket) => {
-        console.log('[ws] client connected');
-        wsManager.addClient(ws);
-
-        try {
-            const forums = await prisma.forum.findMany({
-                include: { _count: { select: { messages: true } } },
-                orderBy: { createdAt: 'desc' }
-            });
-
-            ws.send(JSON.stringify({ type: 'forum_update', forums }));
-        } catch (err) {
-            console.error('[ws] error sending initial data', err);
+    server.on('upgrade', (req: IncomingMessage, socket: Socket, head: Buffer) => {
+        // only accept the expected path
+        if (req.url !== '/websocket') {
+            socket.destroy();
+            return;
         }
-
-        ws.on('close', () => wsManager.removeClient(ws));
-        ws.on('error', () => wsManager.removeClient(ws));
+        wss.handleUpgrade(req, socket, head, (ws) => wss.emit('connection', ws, req));
     });
 
-    console.log('[ws] WebSocket server ready');
+    console.log('[ws] WebSocket server attached');
 }
