@@ -4,34 +4,30 @@ import { WebSocketServer } from 'ws';
 import { wsManager } from './websocket';
 
 export function attachWebSocketServer(server: import('http').Server) {
-    // prevent double-attach in dev/hmr
+    // avoid double-attach (HMR / repeated imports)
     if ((globalThis as any).__wsAttached) return;
     (globalThis as any).__wsAttached = true;
 
     const wss = new WebSocketServer({ noServer: true });
 
     wss.on('connection', (ws, req: IncomingMessage) => {
-        console.log('[ws] connection from', req.socket.remoteAddress);
+        console.log('[ws] connection from', req.socket?.remoteAddress);
         wsManager.addClient(ws);
 
-        ws.on('close', () => {
-            console.log('[ws] client closed');
-            wsManager.removeClient(ws);
-        });
-
         ws.on('message', (data) => {
-            // optional: basic ping handling
             try {
-                const parsed = JSON.parse(data.toString());
+                const parsed = JSON.parse(String(data));
                 if (parsed?.type === 'ping') ws.send(JSON.stringify({ type: 'pong' }));
             } catch {
                 // ignore non-JSON payloads
             }
         });
+
+        ws.on('close', () => wsManager.removeClient(ws));
+        ws.on('error', () => wsManager.removeClient(ws));
     });
 
     server.on('upgrade', (req: IncomingMessage, socket: Socket, head: Buffer) => {
-        // only accept the expected path
         if (req.url !== '/websocket') {
             socket.destroy();
             return;
