@@ -1,6 +1,6 @@
 import { WebSocketServer, WebSocket } from 'ws';
-import { wsManager } from './src/lib/websocket.js';
-import { prisma } from './src/lib/index.js';
+import { wsManager } from './websocket.js';
+import { prisma } from './index.js';
 import type { IncomingMessage } from 'http';
 import type { Socket } from 'net';
 
