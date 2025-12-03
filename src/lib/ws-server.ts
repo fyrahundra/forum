@@ -1,7 +1,7 @@
 // src/server/ws-server.ts
 import { WebSocketServer } from 'ws';
-import { wsManager } from '../lib/websocket.js';
-import { prisma } from '../lib/index.js';
+import { wsManager } from './websocket.js';
+import { prisma } from './index.js';
 
 export function attachWebSocketServer(server: any) {
     // Create WebSocket server with manual upgrade
