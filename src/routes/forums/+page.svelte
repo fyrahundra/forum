@@ -70,13 +70,13 @@
 			</section>
 			<nav style="display: flex; width: 100%; justify-content: space-between;">
 				{#if data.page > 1}
-					<a href={resolve(`?page=${data.page - 1}`)}>Föregående</a>
+					<a href={resolve(`forums?page=${data.page - 1}`)}>Föregående</a>
 				{:else}
 					<span>Föregående</span>
 				{/if}
 				<span> Sida {data.page} av {data.totalPages} </span>
 				{#if data.page < data.totalPages}
-					<a href={resolve(`?page=${data.page + 1}`)}>Nästa</a>
+					<a href={resolve(`forums?page=${data.page + 1}`)}>Nästa</a>
 				{:else}
 					<span>Nästa</span>
 				{/if}
