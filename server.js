@@ -1,7 +1,7 @@
 // server.js
 import { createServer } from 'http';
 import { handler } from './build/handler.js';
-import { attachWebSocketServer } from './src/hooks.js';
+import { attachWebSocketServer } from './hooks.js';
 
 const PORT = process.env.PORT || 3000;
 
