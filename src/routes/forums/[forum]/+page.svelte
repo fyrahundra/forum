@@ -9,112 +9,393 @@
 	$: liveMessages = data.messages;
 	let forumName = data.forum.name;
 
-	console.log(liveMessages);
-
 	let editingId = null;
 </script>
 
-<!-- Breadcrumb navigation -->
-
 <div class="container">
-	<h1>Forum: {forumName}</h1>
+	<header class="page-header">
+		<h1>Forum: {forumName}</h1>
+		<nav class="breadcrumb">
+			<a href={resolve('/forums')}>Alla Forum</a> <span>/</span> {forumName}
+		</nav>
+	</header>
 
-	<nav>
-		<a href={resolve('/forums')}>Alla Forum</a> | {forumName}
-	</nav>
-
-	<article>
-		<section
-			style="overflow-y: scroll; height: 60vh; width: 100%; min-width: 600px; max-width: 600px; border: 1px solid #ccc; padding: 10px; box-sizing: border-box;"
-		>
-			<!-- Lista meddelanden -->
+	<div class="content-wrapper">
+		<section class="messages-section">
 			<h2>Meddelanden ({liveMessages.length})</h2>
-			{#each liveMessages as message (message.id)}
-				<div class="message" in:fly={{ y: 20 }}>
-					<!-- Visa meddelande här -->
-					<div
-						style="display: flex; gap: 10px; flex-direction: row; margin-top: 10px; align-items: center; justify-content: space-between;"
-					>
+			<div class="messages-list">
+				{#each liveMessages as message (message.id)}
+					<div class="message" in:fly={{ y: 20 }}>
 						{#if editingId === message.id}
-							<form
-								action="?/edit"
-								method="POST"
-								style="display: flex; flex-direction:column;"
-								use:enhance
-							>
+							<form action="?/edit" method="POST" class="edit-form" use:enhance>
 								<input type="hidden" name="id" value={message.id} />
 								<textarea name="content" required>{message.content}</textarea>
-								<button type="submit">Spara ändringar</button>
-								<button type="button" onclick={() => (editingId = null)}>Avbryt</button>
+								<div class="button-group">
+									<button type="submit">Spara</button>
+									<button type="button" on:click={() => (editingId = null)}>Avbryt</button>
+								</div>
 							</form>
 						{:else}
-							<div>
+							<div class="message-content">
 								<!-- svelte-ignore a11y_click_events_have_key_events -->
 								<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-								<p onclick={() => (editingId = message.id)}>
-									{message.content} - <em>{message.author}</em> <br />
-									<br />{message.createdAt.toLocaleString()}
+								<p class="message-text" on:click={() => (editingId = message.id)}>
+									{message.content}
 								</p>
+								<div class="message-meta">
+									<em>{message.author}</em>
+									<span class="message-date">{message.createdAt.toLocaleString()}</span>
+								</div>
 							</div>
+							<form action="?/delete" method="POST" class="delete-form" use:enhance>
+								<input type="hidden" name="id" value={message.id} />
+								<button type="submit">Ta bort</button>
+							</form>
 						{/if}
-						<form action="?/delete" method="POST" use:enhance>
-							<input type="hidden" name="id" value={message.id} />
-							<button type="submit" style="cursor: pointer;">Ta bort</button>
-						</form>
 					</div>
-				</div>
-				<hr />
-			{/each}
+				{/each}
+			</div>
+
+			<nav class="pagination">
+				{#if data.page > 1}
+					<a href={resolve(`/forums/${data.forum.name}?page=${data.page - 1}`)}>Föregående</a>
+				{:else}
+					<span>Föregående</span>
+				{/if}
+				<span>Sida {data.page} av {data.totalPages}</span>
+				{#if data.page < data.totalPages}
+					<a href={resolve(`/forums/${data.forum.name}?page=${data.page + 1}`)}>Nästa</a>
+				{:else}
+					<span>Nästa</span>
+				{/if}
+			</nav>
 		</section>
 
-		<nav style="display: flex; justify-content: space-between;">
-			{#if data.page > 1}
-				<a href={resolve(`/forums/${data.forum.name}?page=${data.page - 1}`)}>Föregående</a>
-			{:else}
-				<span>Föregående</span>
+		<aside class="actions-section">
+			{#if form?.error}
+				<p class="error">{form.error}</p>
 			{/if}
-			<span> Sida {data.page} av {data.totalPages} </span>
 
-			{#if data.page < data.totalPages}
-				<a href={resolve(`/forums/${data.forum.name}?page=${data.page + 1}`)}>Nästa</a>
-			{:else}
-				<span>Nästa</span>
-			{/if}
-		</nav>
-
-		{#if form?.error}
-			<p>{form.error}</p>
-		{/if}
-		<!-- Form för nytt meddelande -->
-		<form method="POST" action="?/message" use:enhance>
-			<!-- Lägg till input-fält för meddelande här -->
-			<div style="display: flex; flex-direction: column; margin-bottom: 10px; margin-top: 10px;">
-				<textarea name="content" id="" required placeholder="Ditt meddelande..."
-					>{form?.content ?? ''}</textarea
-				>
-			</div>
-			<div style="display: flex; justify-content: center;">
+			<form method="POST" action="?/message" class="create-message-form" use:enhance>
+				<h3>Nytt meddelande</h3>
+				<textarea name="content" required placeholder="Ditt meddelande...">{form?.content ?? ''}</textarea>
 				<button type="submit">Skicka</button>
-			</div>
-		</form>
-		<form method="GET" action="" use:enhance>
-			<input type="text" name="filter" placeholder="Sök meddelanden..." autocomplete="off" />
-			<button type="submit">Sök</button>
-		</form>
-	</article>
+			</form>
+
+			<form method="GET" action="" class="search-form" use:enhance>
+				<h3>Sök</h3>
+				<input type="text" name="filter" placeholder="Sök meddelanden..." autocomplete="off" />
+				<button type="submit">Sök</button>
+			</form>
+		</aside>
+	</div>
 </div>
 
 <style>
 	.container {
 		width: 100vw;
-		min-height: 100vh;
+		height: 100vh;
 		display: flex;
 		flex-direction: column;
 		justify-content: center;
 		align-items: center;
-		font-family: 'Arial', sans-serif;
+		font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 		color: #2c3e50;
-		padding: 20px;
+		padding: 2rem;
 		box-sizing: border-box;
+		background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+		overflow: hidden;
+	}
+
+	.page-header {
+		text-align: center;
+		margin-bottom: 1.5rem;
+	}
+
+	h1 {
+		font-size: 2rem;
+		margin-bottom: 0.5rem;
+		font-weight: 700;
+		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+		-webkit-background-clip: text;
+		-webkit-text-fill-color: transparent;
+		background-clip: text;
+	}
+
+	h2 {
+		font-size: 1.25rem;
+		margin-bottom: 1rem;
+		font-weight: 700;
+		color: #2c3e50;
+	}
+
+	h3 {
+		font-size: 1.1rem;
+		margin-bottom: 0.75rem;
+		font-weight: 600;
+		color: #2c3e50;
+	}
+
+	.breadcrumb {
+		font-size: 0.9rem;
+		color: #718096;
+	}
+
+	.breadcrumb a {
+		color: #667eea;
+		text-decoration: none;
+		font-weight: 600;
+		transition: color 0.2s ease;
+	}
+
+	.breadcrumb a:hover {
+		color: #764ba2;
+	}
+
+	.breadcrumb span {
+		margin: 0 0.5rem;
+		color: #cbd5e0;
+	}
+
+	.content-wrapper {
+		display: flex;
+		gap: 1.5rem;
+		width: 100%;
+		max-width: 1200px;
+		height: calc(100vh - 200px);
+		overflow: hidden;
+	}
+
+	.messages-section {
+		flex: 2;
+		background: white;
+		padding: 1.5rem;
+		border-radius: 16px;
+		box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+		display: flex;
+		flex-direction: column;
+		overflow: hidden;
+	}
+
+	.actions-section {
+		flex: 1;
+		display: flex;
+		flex-direction: column;
+		gap: 1.5rem;
+		overflow-y: auto;
+	}
+
+	.messages-list {
+		flex: 1;
+		overflow-y: auto;
+		padding-right: 0.5rem;
+		margin-bottom: 1rem;
+	}
+
+	.message {
+		background: #fafafa;
+		padding: 1rem;
+		border-radius: 12px;
+		margin-bottom: 1rem;
+		border: 2px solid #e2e8f0;
+		display: flex;
+		justify-content: space-between;
+		align-items: flex-start;
+		gap: 1rem;
+		transition: all 0.2s ease;
+	}
+
+	.message:hover {
+		border-color: #667eea;
+		box-shadow: 0 2px 8px rgba(102, 126, 234, 0.15);
+	}
+
+	.message-content {
+		flex: 1;
+	}
+
+	.message-text {
+		background: white;
+		padding: 0.75rem;
+		border-radius: 8px;
+		margin-bottom: 0.5rem;
+		cursor: pointer;
+		transition: all 0.2s ease;
+		border: 2px solid transparent;
+	}
+
+	.message-text:hover {
+		border-color: #667eea;
+		box-shadow: 0 2px 8px rgba(102, 126, 234, 0.15);
+	}
+
+	.message-meta {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		font-size: 0.85rem;
+		color: #718096;
+		gap: 1rem;
+	}
+
+	.message-meta em {
+		color: #667eea;
+		font-weight: 600;
+	}
+
+	.message-date {
+		color: #a0aec0;
+		font-size: 0.8rem;
+	}
+
+	.edit-form {
+		width: 100%;
+	}
+
+	.edit-form textarea {
+		min-height: 80px;
+		margin-bottom: 0.5rem;
+	}
+
+	.button-group {
+		display: flex;
+		gap: 0.5rem;
+	}
+
+	.button-group button {
+		flex: 1;
+		padding: 0.6rem;
+		font-size: 0.9rem;
+	}
+
+	.delete-form button {
+		background: linear-gradient(135deg, #f56565 0%, #c53030 100%);
+		box-shadow: 0 4px 12px rgba(229, 62, 62, 0.3);
+		padding: 0.5rem 1rem;
+		font-size: 0.85rem;
+		white-space: nowrap;
+	}
+
+	.delete-form button:hover {
+		box-shadow: 0 6px 20px rgba(229, 62, 62, 0.5);
+	}
+
+	.pagination {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		font-size: 0.9rem;
+		padding-top: 1rem;
+		border-top: 2px solid #e2e8f0;
+		margin-top: auto;
+	}
+
+	.pagination a {
+		color: #667eea;
+		text-decoration: none;
+		font-weight: 600;
+		padding: 0.5rem 1rem;
+		border-radius: 8px;
+		transition: all 0.2s ease;
+	}
+
+	.pagination a:hover {
+		background-color: rgba(102, 126, 234, 0.1);
+	}
+
+	.pagination span {
+		color: #a0aec0;
+	}
+
+	.error {
+		color: #e53e3e;
+		background-color: #fff5f5;
+		padding: 0.75rem;
+		border-radius: 8px;
+		border-left: 4px solid #e53e3e;
+		font-weight: 500;
+		font-size: 0.9rem;
+	}
+
+	.create-message-form,
+	.search-form {
+		background: white;
+		padding: 1.5rem;
+		border-radius: 16px;
+		box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+	}
+
+	textarea {
+		width: 100%;
+		padding: 0.85rem;
+		border: 2px solid #e2e8f0;
+		border-radius: 10px;
+		font-size: 0.95rem;
+		font-family: inherit;
+		min-height: 100px;
+		resize: vertical;
+		box-sizing: border-box;
+		background-color: #f7fafc;
+		transition: all 0.3s ease;
+		margin-bottom: 0.75rem;
+	}
+
+	textarea:focus {
+		outline: none;
+		border-color: #667eea;
+		background-color: white;
+		box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+	}
+
+	input[type="text"] {
+		width: 100%;
+		padding: 0.85rem 1rem;
+		border: 2px solid #e2e8f0;
+		border-radius: 10px;
+		font-size: 0.95rem;
+		box-sizing: border-box;
+		background-color: #f7fafc;
+		transition: all 0.3s ease;
+		margin-bottom: 0.75rem;
+	}
+
+	input[type="text"]:focus {
+		outline: none;
+		border-color: #667eea;
+		background-color: white;
+		box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+	}
+
+	button {
+		padding: 0.75rem 1.5rem;
+		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+		color: white;
+		border: none;
+		border-radius: 10px;
+		cursor: pointer;
+		font-size: 0.95rem;
+		font-weight: 600;
+		transition: all 0.3s ease;
+		box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+	}
+
+	button:hover {
+		transform: translateY(-2px);
+		box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+	}
+
+	button[type="submit"] {
+		width: 100%;
+	}
+
+	button[type="button"] {
+		background: #e2e8f0;
+		color: #4a5568;
+		box-shadow: none;
+	}
+
+	button[type="button"]:hover {
+		background: #cbd5e0;
+		box-shadow: none;
 	}
 </style>
