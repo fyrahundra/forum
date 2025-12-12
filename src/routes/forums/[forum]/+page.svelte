@@ -107,7 +107,7 @@
 								</p>
 								{#if message.images && message.images.length > 0}
 									<div class="message-images">
-										{#each message.images as image, i (image.id)}
+										{#each message.images as image (image.id)}
 											<img
 												src={`/uploads/${image.filename}`}
 												alt={image.filename}
