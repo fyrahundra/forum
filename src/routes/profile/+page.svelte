@@ -46,7 +46,7 @@
 	</form>
 
 	{#if data.user.profileImage}
-		<img src={`/uploads/${data.user.profileImage}`} alt="Uploaded" height="150" width="150" />
+		<img src={data.user.profileImage} alt="Uploaded" height="150" width="150" />
 	{/if}
 
 	<p><strong>Användarnamn:</strong> {data.user.username}</p>

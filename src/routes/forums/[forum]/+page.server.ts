@@ -4,11 +4,8 @@ import { fail, error } from '@sveltejs/kit';
 import type { ServerLoad, Actions } from '@sveltejs/kit';
 import { requireAuth, getUser } from '$lib/auth';
 import { Buffer } from 'buffer';
-import path from 'path';
-import { writeFile, mkdir } from 'fs/promises';
-import { existsSync } from 'fs';
 import { validateImageFile } from '$lib/validation';
-import sharp from 'sharp';
+import { cloudinary } from '$lib/cloudinary';
 
 export const load: ServerLoad = async ({ params, url, cookies }) => {
 	const user = await requireAuth(cookies);
@@ -100,52 +97,31 @@ export const actions = {
 						return fail(400, { success: false, error: `File ${file.name} error: ${error.message}` });
 					}
 
-					const base64Image = Buffer.from(await file.arrayBuffer()).toString('base64');
+					const buffer = Buffer.from(await file.arrayBuffer());
 
 					try {
-						// Ensure uploads directory exists
-						const uploadsDir = path.join('static', 'uploads');
-						if (!existsSync(uploadsDir)) {
-							await mkdir(uploadsDir, { recursive: true });
-						}
-	
-						// Skapa unikt filnamn
-						const filename = `${Date.now()}-${file.name}`;
-						const filepath = path.join(uploadsDir, filename);
-						
-						// Spara fil
-						const buffer = Buffer.from(await file.arrayBuffer());
-						
-						sharp(buffer)
-							.resize(800) // Ändra storlek till max bredd 800px
-							.jpeg({ quality: 80 }) // Komprimera JPEG
-							.toBuffer()
-							.then(async (resizedBuffer) => {
-								await writeFile(filepath, resizedBuffer);
-							})
-							.catch(async (err) => {
-								console.error('Image processing error:', err);
-								// Om fel vid ändring av storlek, spara originalfilen
-								await writeFile(filepath, buffer);
-							});
-
-						// Spara filnamn och data i databas
-						try {
-							await prisma.image.create({
-								data: {
-									filename: filename,
-									data: base64Image,
-									message: {
-										connect: { id: message.id }
-									}
+						// Upload to Cloudinary
+						const upload = await new Promise<{ secure_url: string; public_id: string }>((resolve, reject) => {
+							const stream = cloudinary.uploader.upload_stream(
+								{ folder: 'forum-app/messages', resource_type: 'image', quality: 'auto', width: 800, crop: 'scale' },
+								(error, result) => {
+									if (error || !result) return reject(error);
+									resolve({ secure_url: result.secure_url!, public_id: result.public_id! });
 								}
-							});
-						} catch (error) {
-							console.error('Database error:', error);
-							return fail(500, { success: false, error: `Database error for file ${file.name}` });
-						}
+							);
+							stream.end(buffer);
+						});
+
+						// Spara Cloudinary-referenser i databas
+						await prisma.image.create({
+							data: {
+								filename: upload.public_id, // store public_id
+								data: upload.secure_url, // store secure URL
+								message: { connect: { id: message.id } }
+							}
+						});
 					} catch (error) {
-						console.error('Upload error:', error);
+						console.error('Cloudinary upload error:', error);
 						return fail(500, { success: false, error: `Failed to upload file ${file.name}` });
 					}
 				}
@@ -157,7 +133,7 @@ export const actions = {
 			return fail(500, { error: 'Något gick fel vid skapandet av meddelandet' });
 		}
 	},
-	delete: async ({ request, cookies }) => {
+	delete: async ({ request }) => {
 		const data = await request.formData();
 		const messageId = data.get('id')?.toString();
 

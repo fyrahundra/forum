@@ -109,7 +109,7 @@
 									<div class="message-images">
 										{#each message.images as image (image.id)}
 											<img
-												src={`/uploads/${image.filename}`}
+												src={image.data}
 												alt={image.filename}
 												class="message-image"
 											/>

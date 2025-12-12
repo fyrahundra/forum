@@ -4,10 +4,8 @@ import { prisma } from '$lib';
 import { fail } from '@sveltejs/kit';
 import { validateImageFile } from '$lib/validation';
 
-import path from 'path';
-import { writeFile, mkdir } from 'fs/promises';
 import { Buffer } from 'buffer';
-import { existsSync } from 'fs';
+import { cloudinary } from '$lib/cloudinary';
 
 export const load: ServerLoad = async ({ cookies }) => {
 	let user = await getUser(cookies);
@@ -31,27 +29,25 @@ export const actions: Actions = {
 		}
 
 		try {
-			// Ensure uploads directory exists
-			const uploadsDir = path.join('static', 'uploads');
-			if (!existsSync(uploadsDir)) {
-				await mkdir(uploadsDir, { recursive: true });
-			}
-
-			// Skapa unikt filnamn
-			const filename = `${Date.now()}-${file.name}`;
-			const filepath = path.join(uploadsDir, filename);
-			
-			// Spara fil
 			const buffer = Buffer.from(await file.arrayBuffer());
-			await writeFile(filepath, buffer);
-			
-			// Spara bara filnamn i databas
-			await prisma.user.update({
-				where: { id: data.get('userId') as string },
-				data: { profileImage: filename }
+
+			const upload = await new Promise<{ secure_url: string; public_id: string }>((resolve, reject) => {
+				const stream = cloudinary.uploader.upload_stream(
+					{ folder: 'forum-app/profile', resource_type: 'image', quality: 'auto', width: 512, crop: 'limit' },
+					(error, result) => {
+						if (error || !result) return reject(error);
+						resolve({ secure_url: result.secure_url!, public_id: result.public_id! });
+					}
+				);
+				stream.end(buffer);
 			});
 
-			return { success: true, filename };
+			await prisma.user.update({
+				where: { id: data.get('userId') as string },
+				data: { profileImage: upload.secure_url }
+			});
+
+			return { success: true, filename: upload.public_id };
 		} catch (error) {
 			console.error('Upload error:', error);
 			return fail(500, { success: false, error: 'Failed to upload file' });
