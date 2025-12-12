@@ -195,7 +195,7 @@
 				>
 				{#if previewUrl}
 					<div style="overflow-x: auto; display: flex; gap: 0.5rem; margin-bottom: 0.5rem;">
-						{#each images as image (image.filename)}
+						{#each images as image, i (i)}
 							<div style="position: relative;">
 								<img src={image} alt="Preview" height="100" width="100" />
 								<button class="image_button" on:click={() => removeImage(image)}>X</button>
