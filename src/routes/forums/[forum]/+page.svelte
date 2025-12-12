@@ -58,7 +58,6 @@
 
 		syncFileInput();
 	}
-
 </script>
 
 <div class="container">
@@ -108,32 +107,46 @@
 								{#if message.images && message.images.length > 0}
 									<div class="message-images">
 										{#each message.images as image (image.id)}
-											<img
-												src={image.data}
-												alt={image.filename}
-												class="message-image"
-											/>
+											<img src={image.data} alt={image.filename} class="message-image" />
 										{/each}
 									</div>
 								{/if}
 								<div class="message-meta">
-									<em>{message.author}</em>
+									<div class="avatar-block">
+										{#if message.user?.profileImage}
+											<img
+												src={message.user.profileImage}
+												alt={message.user.username}
+												width="32"
+												height="32"
+												class="avatar"
+											/>
+										{:else}
+											<div class="avatar placeholder">{message.author?.[0]?.toUpperCase() ?? '?'}</div>
+										{/if}
+										<em>{message.author}</em>
+									</div>
 									<span class="message-date">{message.createdAt.toLocaleString()}</span>
 								</div>
 							</div>
-						{#if data.user.id === message.userId}
-							<form action="?/delete" method="POST" class="delete-form" use:enhance={() => {
-								return async ({ result, update }) => {
-									await update();
-									if (result.type === 'success') {
-										await invalidateAll();
-									}
-								};
-							}}>
-								<input type="hidden" name="id" value={message.id} />
-								<button type="submit">Ta bort</button>
-							</form>
-						{/if}
+							{#if data.user.id === message.userId}
+								<form
+									action="?/delete"
+									method="POST"
+									class="delete-form"
+									use:enhance={() => {
+										return async ({ result, update }) => {
+											await update();
+											if (result.type === 'success') {
+												await invalidateAll();
+											}
+										};
+									}}
+								>
+									<input type="hidden" name="id" value={message.id} />
+									<button type="submit">Ta bort</button>
+								</form>
+							{/if}
 						{/if}
 					</div>
 				{/each}
@@ -199,9 +212,7 @@
 					on:change={handleFileSelect}
 					bind:this={fileInput}
 				/>
-				<button type="submit" disabled={uploading}
-					>{uploading ? 'Skickar...' : 'Skicka'}</button
-				>
+				<button type="submit" disabled={uploading}>{uploading ? 'Skickar...' : 'Skicka'}</button>
 			</form>
 
 			<form method="GET" action="" class="search-form" use:enhance>
@@ -311,8 +322,8 @@
 	.image_button {
 		z-index: 10;
 		position: absolute;
-		top: 0.20rem;
-		right: 0.20rem;
+		top: 0.2rem;
+		right: 0.2rem;
 		background: #e53e3e;
 		border: none;
 		color: white;
@@ -380,6 +391,32 @@
 		font-size: 0.85rem;
 		color: #718096;
 		gap: 1rem;
+	}
+
+	.avatar-block {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+	}
+
+	.avatar {
+		border-radius: 50%;
+		object-fit: cover;
+		border: 2px solid #e2e8f0;
+	}
+
+	.avatar.placeholder {
+		width: 32px;
+		height: 32px;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		border-radius: 50%;
+		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+		color: white;
+		font-weight: 700;
+		border: 2px solid #e2e8f0;
+		font-size: 0.9rem;
 	}
 
 	.message-meta em {

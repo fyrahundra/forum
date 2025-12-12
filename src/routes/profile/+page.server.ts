@@ -17,7 +17,7 @@ export const actions: Actions = {
 	uploadToFile: async ({ request }) => {
 		const data = await request.formData();
 		const file = data.get('image') as File;
-		
+
 		if (!file || !(file instanceof File)) {
 			return fail(400, { success: false, error: 'No file uploaded' });
 		}
@@ -31,16 +31,24 @@ export const actions: Actions = {
 		try {
 			const buffer = Buffer.from(await file.arrayBuffer());
 
-			const upload = await new Promise<{ secure_url: string; public_id: string }>((resolve, reject) => {
-				const stream = cloudinary.uploader.upload_stream(
-					{ folder: 'forum-app/profile', resource_type: 'image', quality: 'auto', width: 512, crop: 'limit' },
-					(error, result) => {
-						if (error || !result) return reject(error);
-						resolve({ secure_url: result.secure_url!, public_id: result.public_id! });
-					}
-				);
-				stream.end(buffer);
-			});
+			const upload = await new Promise<{ secure_url: string; public_id: string }>(
+				(resolve, reject) => {
+					const stream = cloudinary.uploader.upload_stream(
+						{
+							folder: 'forum-app/profile',
+							resource_type: 'image',
+							quality: 'auto',
+							width: 512,
+							crop: 'limit'
+						},
+						(error, result) => {
+							if (error || !result) return reject(error);
+							resolve({ secure_url: result.secure_url!, public_id: result.public_id! });
+						}
+					);
+					stream.end(buffer);
+				}
+			);
 
 			await prisma.user.update({
 				where: { id: data.get('userId') as string },

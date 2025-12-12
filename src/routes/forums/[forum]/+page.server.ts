@@ -32,7 +32,14 @@ export const load: ServerLoad = async ({ params, url, cookies }) => {
 			...(filter ? { content: { contains: filter } } : {})
 		},
 		include: {
-			images: true
+			images: true,
+			user: {
+				select: {
+					id: true,
+					username: true,
+					profileImage: true
+				}
+			}
 		},
 		orderBy: { createdAt: 'desc' },
 		skip: (page - 1) * pageSize,
@@ -51,9 +58,7 @@ export const load: ServerLoad = async ({ params, url, cookies }) => {
 };
 
 export const actions = {
-	uploadToFile: async ({ request }) => {
-			
-		},
+	uploadToFile: async ({ request }) => {},
 	message: async ({ request, params, cookies }) => {
 		// Skapa nytt meddelande med Prisma
 		// Tips: använd connect för att koppla till forum
@@ -94,23 +99,34 @@ export const actions = {
 					try {
 						validateImageFile(file);
 					} catch (error) {
-						return fail(400, { success: false, error: `File ${file.name} error: ${error.message}` });
+						return fail(400, {
+							success: false,
+							error: `File ${file.name} error: ${error.message}`
+						});
 					}
 
 					const buffer = Buffer.from(await file.arrayBuffer());
 
 					try {
 						// Upload to Cloudinary
-						const upload = await new Promise<{ secure_url: string; public_id: string }>((resolve, reject) => {
-							const stream = cloudinary.uploader.upload_stream(
-								{ folder: 'forum-app/messages', resource_type: 'image', quality: 'auto', width: 800, crop: 'scale' },
-								(error, result) => {
-									if (error || !result) return reject(error);
-									resolve({ secure_url: result.secure_url!, public_id: result.public_id! });
-								}
-							);
-							stream.end(buffer);
-						});
+						const upload = await new Promise<{ secure_url: string; public_id: string }>(
+							(resolve, reject) => {
+								const stream = cloudinary.uploader.upload_stream(
+									{
+										folder: 'forum-app/messages',
+										resource_type: 'image',
+										quality: 'auto',
+										width: 800,
+										crop: 'scale'
+									},
+									(error, result) => {
+										if (error || !result) return reject(error);
+										resolve({ secure_url: result.secure_url!, public_id: result.public_id! });
+									}
+								);
+								stream.end(buffer);
+							}
+						);
 
 						// Spara Cloudinary-referenser i databas
 						await prisma.image.create({
