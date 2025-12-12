@@ -58,10 +58,12 @@
 						{/if}
 
 						{#if editingID === null}
-							<form action="?/delete" method="POST" use:enhance class="delete-form">
-								<input type="hidden" name="id" value={forum.id} />
-								<button type="submit">Ta bort</button>
-							</form>
+							{#if data.user && data.user.id === forum.userId}
+								<form action="?/delete" method="POST" use:enhance class="delete-form">
+									<input type="hidden" name="id" value={forum.id} />
+									<button type="submit">Ta bort</button>
+								</form>
+							{/if}
 						{/if}
 					</div>
 				{/each}
