@@ -33,7 +33,9 @@
 						{#if forum.id === editingID}
 							<form action="?/edit" method="POST" class="edit-form" use:enhance>
 								<input type="hidden" name="id" value={forum.id} />
-								<textarea name="description" placeholder="Ny beskrivning..." required>{forum.description}</textarea>
+								<textarea name="description" placeholder="Ny beskrivning..." required
+									>{forum.description}</textarea
+								>
 								<div class="button-group">
 									<button type="submit">Spara ändringar</button>
 									<button type="button" on:click={() => (editingID = null)}>Avbryt</button>
@@ -43,13 +45,15 @@
 							<!-- svelte-ignore a11y_click_events_have_key_events -->
 							<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 							<p class="forum-desc" on:click={() => (editingID = forum.id)}>
-								{forum.description ? `Beskrivning: ${forum.description}` : 'Ingen beskrivning tillgänglig'}
+								{forum.description
+									? `Beskrivning: ${forum.description}`
+									: 'Ingen beskrivning tillgänglig'}
 								<br />
 								{forum._count.messages === 1
 									? `(1 meddelande)`
 									: forum._count.messages > 1
-									? `(${forum._count.messages} meddelanden)`
-									: ''}
+										? `(${forum._count.messages} meddelanden)`
+										: ''}
 							</p>
 						{/if}
 
@@ -90,11 +94,9 @@
 						value={form?.name ?? ''}
 						required
 					/>
-					<textarea
-						name="description"
-						placeholder="Beskrivning..."
-						required
-					>{form?.description ?? ''}</textarea>
+					<textarea name="description" placeholder="Beskrivning..." required
+						>{form?.description ?? ''}</textarea
+					>
 					<input type="hidden" name="userId" value={data.user?.id} />
 					<button type="submit">Skapa forum</button>
 				</form>
@@ -109,7 +111,8 @@
 		height: 100vh;
 		display: flex;
 		flex-direction: column;
-		font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+		font-family:
+			-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 		color: #2c3e50;
 		overflow: hidden;
 		background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
@@ -132,7 +135,7 @@
 		background: white;
 		padding: 2rem;
 		border-radius: 20px;
-		box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+		box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
 	}
 
 	.create-section {
@@ -143,7 +146,7 @@
 		background: white;
 		padding: 2rem;
 		border-radius: 20px;
-		box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+		box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
 	}
 
 	h1 {

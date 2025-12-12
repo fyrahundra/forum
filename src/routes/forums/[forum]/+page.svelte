@@ -3,20 +3,70 @@
 	import { resolve } from '$app/paths';
 	import { enhance } from '$app/forms';
 	import { fly } from 'svelte/transition';
+	import { invalidateAll } from '$app/navigation';
 
 	export let data, form;
 
 	$: liveMessages = data.messages;
-	let forumName = data.forum.name;
+	$: forumName = data.forum.name;
 
 	let editingId = null;
+	let previewUrl = '';
+	let uploading = false;
+	let images = [];
+	let selectedFiles = [];
+	let fileInput;
+
+	function syncFileInput() {
+		if (!fileInput) return;
+		const dt = new DataTransfer();
+		for (const f of selectedFiles) dt.items.add(f);
+		fileInput.files = dt.files;
+	}
+
+	function handleFileSelect(event) {
+		const files = event.target.files;
+		if (!files || files.length === 0) return;
+
+		const newPreviews = [];
+		const newFiles = [];
+
+		for (const file of files) {
+			const url = URL.createObjectURL(file);
+			newPreviews.push(url);
+			newFiles.push(file);
+		}
+
+		images = [...images, ...newPreviews];
+		selectedFiles = [...selectedFiles, ...newFiles];
+		syncFileInput();
+		previewUrl = newPreviews.at(-1) ?? previewUrl;
+	}
+
+	function removeImage(imageToRemove) {
+		const index = images.indexOf(imageToRemove); // get index before filtering
+
+		if (index > -1) {
+			selectedFiles.splice(index, 1);
+		}
+
+		images = images.filter((img) => img !== imageToRemove);
+
+		if (previewUrl === imageToRemove) {
+			previewUrl = images.length > 0 ? images[0] : '';
+		}
+
+		syncFileInput();
+	}
+
 </script>
 
 <div class="container">
 	<header class="page-header">
 		<h1>Forum: {forumName}</h1>
 		<nav class="breadcrumb">
-			<a href={resolve('/forums')}>Alla Forum</a> <span>/</span> {forumName}
+			<a href={resolve('/forums')}>Alla Forum</a> <span>/</span>
+			{forumName}
 		</nav>
 	</header>
 
@@ -27,7 +77,20 @@
 				{#each liveMessages as message (message.id)}
 					<div class="message" in:fly={{ y: 20 }}>
 						{#if editingId === message.id}
-							<form action="?/edit" method="POST" class="edit-form" use:enhance>
+							<form
+								action="?/edit"
+								method="POST"
+								class="edit-form"
+								use:enhance={() => {
+									return async ({ result, update }) => {
+										await update();
+										if (result.type === 'success') {
+											editingId = null;
+											await invalidateAll();
+										}
+									};
+								}}
+							>
 								<input type="hidden" name="id" value={message.id} />
 								<textarea name="content" required>{message.content}</textarea>
 								<div class="button-group">
@@ -42,15 +105,35 @@
 								<p class="message-text" on:click={() => (editingId = message.id)}>
 									{message.content}
 								</p>
+								{#if message.images && message.images.length > 0}
+									<div class="message-images">
+										{#each message.images as image}
+											<img
+												src={`/uploads/${image.filename}`}
+												alt={image.filename}
+												class="message-image"
+											/>
+										{/each}
+									</div>
+								{/if}
 								<div class="message-meta">
 									<em>{message.author}</em>
 									<span class="message-date">{message.createdAt.toLocaleString()}</span>
 								</div>
 							</div>
-							<form action="?/delete" method="POST" class="delete-form" use:enhance>
+						{#if data.user.id === message.userId}
+							<form action="?/delete" method="POST" class="delete-form" use:enhance={() => {
+								return async ({ result, update }) => {
+									await update();
+									if (result.type === 'success') {
+										await invalidateAll();
+									}
+								};
+							}}>
 								<input type="hidden" name="id" value={message.id} />
 								<button type="submit">Ta bort</button>
 							</form>
+						{/if}
 						{/if}
 					</div>
 				{/each}
@@ -76,10 +159,49 @@
 				<p class="error">{form.error}</p>
 			{/if}
 
-			<form method="POST" action="?/message" class="create-message-form" use:enhance>
+			<form
+				method="POST"
+				action="?/message"
+				class="create-message-form"
+				enctype="multipart/form-data"
+				use:enhance={() => {
+					uploading = true;
+					return async ({ update }) => {
+						uploading = false;
+						images = [];
+						selectedFiles = [];
+						previewUrl = '';
+						await update();
+					};
+				}}
+			>
 				<h3>Nytt meddelande</h3>
-				<textarea name="content" required placeholder="Ditt meddelande...">{form?.content ?? ''}</textarea>
-				<button type="submit">Skicka</button>
+
+				<textarea name="content" required placeholder="Ditt meddelande..."
+					>{form?.content ?? ''}</textarea
+				>
+				{#if previewUrl}
+					<div style="overflow-x: auto; display: flex; gap: 0.5rem; margin-bottom: 0.5rem;">
+						{#each images as image}
+							<div style="position: relative;">
+								<img src={image} alt="Preview" height="100" width="100" />
+								<button class="image_button" on:click={() => removeImage(image)}>X</button>
+							</div>
+						{/each}
+					</div>
+				{/if}
+				<input
+					type="file"
+					name="attachment"
+					multiple
+					accept="image/*"
+					disabled={uploading}
+					on:change={handleFileSelect}
+					bind:this={fileInput}
+				/>
+				<button type="submit" disabled={uploading}
+					>{uploading ? 'Skickar...' : 'Skicka'}</button
+				>
 			</form>
 
 			<form method="GET" action="" class="search-form" use:enhance>
@@ -99,7 +221,8 @@
 		flex-direction: column;
 		justify-content: center;
 		align-items: center;
-		font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+		font-family:
+			-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 		color: #2c3e50;
 		padding: 2rem;
 		box-sizing: border-box;
@@ -171,7 +294,7 @@
 		background: white;
 		padding: 1.5rem;
 		border-radius: 16px;
-		box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+		box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
 		display: flex;
 		flex-direction: column;
 		overflow: hidden;
@@ -183,6 +306,27 @@
 		flex-direction: column;
 		gap: 1.5rem;
 		overflow-y: auto;
+	}
+
+	.image_button {
+		z-index: 10;
+		position: absolute;
+		top: 0.20rem;
+		right: 0.20rem;
+		background: #e53e3e;
+		border: none;
+		color: white;
+		border-radius: 50%;
+		width: 20px;
+		height: 20px;
+		cursor: pointer;
+		font-size: 0.9rem;
+		line-height: 18px;
+		padding: 0;
+	}
+
+	.image_button:hover {
+		background: #c53030;
 	}
 
 	.messages-list {
@@ -322,7 +466,7 @@
 		background: white;
 		padding: 1.5rem;
 		border-radius: 16px;
-		box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+		box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
 	}
 
 	textarea {
@@ -347,7 +491,7 @@
 		box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 	}
 
-	input[type="text"] {
+	input[type='text'] {
 		width: 100%;
 		padding: 0.85rem 1rem;
 		border: 2px solid #e2e8f0;
@@ -359,7 +503,7 @@
 		margin-bottom: 0.75rem;
 	}
 
-	input[type="text"]:focus {
+	input[type='text']:focus {
 		outline: none;
 		border-color: #667eea;
 		background-color: white;
@@ -384,18 +528,42 @@
 		box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
 	}
 
-	button[type="submit"] {
+	button[type='submit'] {
 		width: 100%;
 	}
 
-	button[type="button"] {
+	button[type='button'] {
 		background: #e2e8f0;
 		color: #4a5568;
 		box-shadow: none;
 	}
 
-	button[type="button"]:hover {
+	button[type='button']:hover {
 		background: #cbd5e0;
 		box-shadow: none;
+	}
+
+	.message-images {
+		display: flex;
+		gap: 0.5rem;
+		flex-wrap: wrap;
+		overflow-x: auto;
+		margin-top: 0.75rem;
+		margin-bottom: 0.5rem;
+	}
+
+	.message-image {
+		width: 100px;
+		height: 100px;
+		object-fit: cover;
+		border-radius: 8px;
+		border: 2px solid #e2e8f0;
+		transition: all 0.2s ease;
+	}
+
+	.message-image:hover {
+		border-color: #667eea;
+		transform: scale(1.05);
+		cursor: pointer;
 	}
 </style>

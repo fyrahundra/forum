@@ -10,6 +10,7 @@
 		<div class="nav-left">
 			<a href={resolve('/')}>Hem</a>
 			{#if data.user}
+				<a href={resolve('/forums')}>Forum</a>
 				<a href={resolve('/profile')}>Profil</a>
 			{/if}
 		</div>
@@ -37,7 +38,8 @@
 		width: 100vw;
 		height: 100vh;
 		box-sizing: border-box;
-		font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+		font-family:
+			-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 	}
 
 	.main-nav {
@@ -48,7 +50,7 @@
 		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 		height: 70px;
 		flex-shrink: 0;
-		box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+		box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 	}
 
 	.nav-left,
@@ -71,13 +73,13 @@
 
 	.nav-left a:hover,
 	.nav-right a:hover {
-		background-color: rgba(255,255,255,0.15);
+		background-color: rgba(255, 255, 255, 0.15);
 		transform: translateY(-2px);
 	}
 
 	.nav-right button {
-		background: rgba(255,255,255,0.2);
-		border: 1px solid rgba(255,255,255,0.3);
+		background: rgba(255, 255, 255, 0.2);
+		border: 1px solid rgba(255, 255, 255, 0.3);
 		cursor: pointer;
 		font: inherit;
 		color: white;
@@ -88,9 +90,9 @@
 	}
 
 	.nav-right button:hover {
-		background: rgba(255,255,255,0.3);
+		background: rgba(255, 255, 255, 0.3);
 		transform: translateY(-2px);
-		box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 	}
 
 	main {

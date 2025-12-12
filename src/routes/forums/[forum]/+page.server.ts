@@ -2,7 +2,13 @@
 import { prisma } from '$lib';
 import { fail, error } from '@sveltejs/kit';
 import type { ServerLoad, Actions } from '@sveltejs/kit';
-import { requireAuth } from '$lib/auth';
+import { requireAuth, getUser } from '$lib/auth';
+import { Buffer } from 'buffer';
+import path from 'path';
+import { writeFile, mkdir } from 'fs/promises';
+import { existsSync } from 'fs';
+import { validateImageFile } from '$lib/validation';
+import sharp from 'sharp';
 
 export const load: ServerLoad = async ({ params, url, cookies }) => {
 	const user = await requireAuth(cookies);
@@ -28,6 +34,9 @@ export const load: ServerLoad = async ({ params, url, cookies }) => {
 			forumId: forum.id,
 			...(filter ? { content: { contains: filter } } : {})
 		},
+		include: {
+			images: true
+		},
 		orderBy: { createdAt: 'desc' },
 		skip: (page - 1) * pageSize,
 		take: pageSize
@@ -45,6 +54,9 @@ export const load: ServerLoad = async ({ params, url, cookies }) => {
 };
 
 export const actions = {
+	uploadToFile: async ({ request }) => {
+			
+		},
 	message: async ({ request, params, cookies }) => {
 		// Skapa nytt meddelande med Prisma
 		// Tips: använd connect för att koppla till forum
@@ -55,12 +67,18 @@ export const actions = {
 		const author = user?.username ?? 'Anonymous';
 		const userId = user?.id ?? null;
 
+		const attachments = data.getAll('attachment') as File[];
+
 		if (!content || !author) {
 			return fail(400, { error: 'Innehåll och författare krävs' });
 		}
 
+		if (!attachments || !(attachments[0] instanceof File)) {
+			return fail(400, { success: false, error: 'No file uploaded' });
+		}
+
 		try {
-			await prisma.message.create({
+			let message = await prisma.message.create({
 				data: {
 					content: content,
 					author: author,
@@ -73,24 +91,73 @@ export const actions = {
 				}
 			});
 
-			const updatedForum = await prisma.forum.findUnique({
-				where: { name: forumName },
-				include: {
-					_count: { select: { messages: true } },
-					messages: true
-				}
-			});
+			// Hantera filuppladdningar om några finns
+			if (attachments && attachments.length > 0 && attachments[0].size > 0) {
+				for (const file of attachments) {
+					try {
+						validateImageFile(file);
+					} catch (error) {
+						return fail(400, { success: false, error: `File ${file.name} error: ${error.message}` });
+					}
 
-			if (!updatedForum) {
-				return fail(404, { error: 'Forum hittades inte' });
+					const base64Image = Buffer.from(await file.arrayBuffer()).toString('base64');
+
+					try {
+						// Ensure uploads directory exists
+						const uploadsDir = path.join('static', 'uploads');
+						if (!existsSync(uploadsDir)) {
+							await mkdir(uploadsDir, { recursive: true });
+						}
+	
+						// Skapa unikt filnamn
+						const filename = `${Date.now()}-${file.name}`;
+						const filepath = path.join(uploadsDir, filename);
+						
+						// Spara fil
+						const buffer = Buffer.from(await file.arrayBuffer());
+						
+						sharp(buffer)
+							.resize(800) // Ändra storlek till max bredd 800px
+							.jpeg({ quality: 80 }) // Komprimera JPEG
+							.toBuffer()
+							.then(async (resizedBuffer) => {
+								await writeFile(filepath, resizedBuffer);
+							})
+							.catch(async (err) => {
+								console.error('Image processing error:', err);
+								// Om fel vid ändring av storlek, spara originalfilen
+								await writeFile(filepath, buffer);
+							});
+
+						// Spara filnamn och data i databas
+						try {
+							await prisma.image.create({
+								data: {
+									filename: filename,
+									data: base64Image,
+									message: {
+										connect: { id: message.id }
+									}
+								}
+							});
+						} catch (error) {
+							console.error('Database error:', error);
+							return fail(500, { success: false, error: `Database error for file ${file.name}` });
+						}
+					} catch (error) {
+						console.error('Upload error:', error);
+						return fail(500, { success: false, error: `Failed to upload file ${file.name}` });
+					}
+				}
 			}
 
-			return { success: true };
+			return { success: true, messageId: message.id };
 		} catch (error) {
-			return fail(500, { error: 'Kunde ej skapa meddelande' });
+			console.error('Message creation error:', error);
+			return fail(500, { error: 'Något gick fel vid skapandet av meddelandet' });
 		}
 	},
-	delete: async ({ request }) => {
+	delete: async ({ request, cookies }) => {
 		const data = await request.formData();
 		const messageId = data.get('id')?.toString();
 
@@ -102,6 +169,7 @@ export const actions = {
 			await prisma.message.delete({
 				where: { id: messageId }
 			});
+			return { success: true };
 		} catch (error) {
 			return fail(500, { error: 'Något gick fel vid borttagning' });
 		}
@@ -119,6 +187,7 @@ export const actions = {
 				where: { id: messageId },
 				data: { content: newContent }
 			});
+			return { success: true };
 		} catch (error) {
 			return fail(500, { error: 'Något gick fel vid uppdatering' });
 		}

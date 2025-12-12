@@ -85,14 +85,15 @@
 		justify-content: center;
 		align-items: center;
 		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-		font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+		font-family:
+			-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 	}
 
 	.form-container {
 		background: #fff;
 		padding: 3rem 3.5rem;
 		border-radius: 20px;
-		box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+		box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
 		display: flex;
 		flex-direction: column;
 		align-items: center;
@@ -139,7 +140,7 @@
 		box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 	}
 
-	button[type="submit"] {
+	button[type='submit'] {
 		margin-top: 1.5rem;
 		padding: 1rem;
 		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -153,12 +154,12 @@
 		box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
 	}
 
-	button[type="submit"]:hover:not(:disabled) {
+	button[type='submit']:hover:not(:disabled) {
 		transform: translateY(-2px);
 		box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
 	}
 
-	button[type="submit"]:disabled {
+	button[type='submit']:disabled {
 		opacity: 0.6;
 		cursor: not-allowed;
 		transform: none;

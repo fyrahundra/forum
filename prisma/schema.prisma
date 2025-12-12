@@ -17,6 +17,8 @@ model User {
   email     String   @unique
   createdAt DateTime @default(now())
 
+  profileImage String? //base64
+
   forums   Forum[]   @relation("ForumCreatedBy")
   messages Message[] @relation("MessageCreatedBy")
 }
@@ -44,4 +46,16 @@ model Message {
 
   userId String
   user   User   @relation("MessageCreatedBy", fields: [userId], references: [id])
+
+  images Image[]
+}
+
+model Image {
+  id        String   @id @default(uuid())
+  filename  String
+  data      String   // base64 encoded string
+  uploadedAt DateTime @default(now())
+
+  message   Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  messageId String
 }
