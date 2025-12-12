@@ -107,7 +107,7 @@
 								</p>
 								{#if message.images && message.images.length > 0}
 									<div class="message-images">
-										{#each message.images as image}
+										{#each message.images as image, i (image.id)}
 											<img
 												src={`/uploads/${image.filename}`}
 												alt={image.filename}
@@ -182,7 +182,7 @@
 				>
 				{#if previewUrl}
 					<div style="overflow-x: auto; display: flex; gap: 0.5rem; margin-bottom: 0.5rem;">
-						{#each images as image}
+						{#each images as image (image.filename)}
 							<div style="position: relative;">
 								<img src={image} alt="Preview" height="100" width="100" />
 								<button class="image_button" on:click={() => removeImage(image)}>X</button>
