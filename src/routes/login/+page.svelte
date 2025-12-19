@@ -26,15 +26,17 @@
 				};
 			}}
 		>
-			<label for="username">Användarnamn:</label>
-			<input
-				id="username"
-				type="text"
-				name="username"
-				required
-				placeholder="Skriv Användarnamn"
-				autocomplete="off"
-			/>
+			{#if isLogin === false}
+				<label for="username">Användarnamn:</label>
+				<input
+					id="username"
+					type="text"
+					name="username"
+					required
+					placeholder="Skriv Användarnamn"
+					autocomplete="off"
+				/>
+			{/if}
 
 			<label for="email">Email:</label>
 			<input

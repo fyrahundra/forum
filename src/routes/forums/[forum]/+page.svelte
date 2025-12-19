@@ -122,7 +122,9 @@
 												class="avatar"
 											/>
 										{:else}
-											<div class="avatar placeholder">{message.author?.[0]?.toUpperCase() ?? '?'}</div>
+											<div class="avatar placeholder">
+												{message.author?.[0]?.toUpperCase() ?? '?'}
+											</div>
 										{/if}
 										<em>{message.author}</em>
 									</div>

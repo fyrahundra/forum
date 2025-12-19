@@ -1,80 +1,109 @@
 import type { Actions } from '@sveltejs/kit';
 import { prisma } from '$lib';
 import { fail, redirect } from '@sveltejs/kit';
+import { hashPassword, validatePassword } from '$lib/auth';
+
+function validatePasswordStrength(password: string, email: string, username: string): string[] {
+	const errors: string[] = [];
+	if (password.length < 6) {
+		errors.push('Lösenord måste vara minst 6 tecken långt.');
+	}
+	if (!/[A-Z]/.test(password)) {
+		errors.push('Lösenord måste innehålla minst en stor bokstav.');
+	}
+	if (!/[a-z]/.test(password)) {
+		errors.push('Lösenord måste innehålla minst en liten bokstav.');
+	}
+	if (!/[0-9]/.test(password)) {
+		errors.push('Lösenord måste innehålla minst en siffra.');
+	}
+	if (!/[\W_]/.test(password)) {
+		errors.push('Lösenord måste innehålla minst ett specialtecken.');
+	}
+	if (email && password.toLowerCase().includes(email.toLowerCase())) {
+		errors.push('Lösenord får inte innehålla din e-postadress.');
+	}
+	if (username && password.toLowerCase().includes(username.toLowerCase())) {
+		errors.push('Lösenord får inte innehålla ditt användarnamn.');
+	}
+
+	const commonPasswords = [
+		'password',
+		'123456',
+		'qwerty',
+		'letmein',
+		'welcome',
+		'abc123',
+		'password123'
+	];
+	if (commonPasswords.includes(password.toLowerCase())) {
+		errors.push('Lösenord är för vanligt. Välj ett starkare lösenord.');
+	}
+
+	return errors;
+}
+
+const failedAttempts = new Map<string, { count: number; lastAttempt: Date }>();
 
 export const actions: Actions = {
 	register: async ({ request, cookies }) => {
-		// Din uppgift: Få data från formuläret
 		const data = await request.formData();
 		const username = data.get('username')?.toString();
 		const email = data.get('email')?.toString();
 		const password = data.get('password')?.toString();
 
-		// Din uppgift: Validering - vad ska du kolla?
-		if (!username || username === undefined) {
-			return fail(400, { error: 'Användarnamn krävs' });
-		}
-		if (!email || email === undefined) {
-			return fail(400, { error: 'Email krävs' });
-		}
-		if (!password || password === undefined) {
-			return fail(400, { error: 'Lösenord krävs' });
+		// Validering
+		if (!username || !password) {
+			return fail(400, { error: 'Användarnamn och lösenord krävs' });
 		}
 
-		// Lägg till fler valideringar:
-		// - Password för kort?
-		// - Username för kort?
-		// - Ogiltiga tecken?
+		if (username.length < 3) {
+			return fail(400, { error: 'Användarnamn måste vara minst 3 tecken' });
+		}
 
-		// Din uppgift: Kolla om användaren redan finns
+		if (password.length < 6) {
+			return fail(400, { error: 'Lösenord måste vara minst 6 tecken' });
+		}
+
+		const passwordErrors = validatePasswordStrength(password, email, username);
+		if (passwordErrors.length > 0) {
+			return fail(400, { error: passwordErrors.join('. ') });
+		}
+
+		// Kontrollera om användaren redan finns
 		const existingUser = await prisma.user.findUnique({
-			where: {
-				username: username,
-				email: email
-			}
+			where: { email: email }
 		});
 
 		if (existingUser) {
-			// Vad ska hända? Returnera fail() med lämpligt meddelande
-			return fail(400, { error: 'Kontot finns redan' });
+			return fail(400, { error: 'E-postadressen är redan tagen' });
 		}
 
-		// Din uppgift: Skapa användare
-		// VARNING: Detta sparar lösenord i klartext (osäkert!)
-		// Vi kommer fixa detta i senare modul
-		try {
-			const newUser = await prisma.user.create({
-				data: {
-					username: username,
-					email: email,
-					password: password
-				}
-			});
+		// Hasha lösenordet säkert
+		const { salt, hash } = hashPassword(password);
 
-			// Din uppgift: Logga in användaren direkt
-			// För nu: spara user ID i cookie (enkelt men inte säkrast)
-			cookies.set('userId', newUser.id, {
-				path: '/',
-				maxAge: 604800,
-				secure: false, // true i production
-				httpOnly: true
-			});
-			throw redirect(303, '/forums');
-		} catch (error) {
-			if (
-				error &&
-				((error.status && error.status >= 300 && error.status < 400) || error.name === 'Redirect')
-			) {
-				console.log('[register] rethrowing redirect:', error);
-				throw error;
+		// Skapa användare med säker lagring
+		const newUser = await prisma.user.create({
+			data: {
+				username,
+				email,
+				salt: salt,
+				hash: hash
 			}
-			// Vad kan gå fel här? Hur hanterar du det?
-			return fail(500, { message: 'Kunde Inte Skapa Användare' });
-		}
-		// Vart ska användaren skickas efter registrering?
+		});
+
+		// Logga in användaren
+		cookies.set('userId', newUser.id, {
+			path: '/',
+			maxAge: 60 * 60 * 24 * 7,
+			secure: false, // true i production
+			httpOnly: true
+		});
+
+		throw redirect(307, '/forums');
 	},
 
-	login: async ({ request, cookies }) => {
+	login: async ({ request, cookies, getClientAddress }) => {
 		// Din uppgift: Implementera login-logiken
 		// 1. Få username och password från formData
 		// 2. Hitta användare i databas
@@ -84,35 +113,59 @@ export const actions: Actions = {
 
 		// Din implementation här:
 
+		const clientIP = getClientAddress();
+
+		const attempts = failedAttempts.get(clientIP);
+
+		if (attempts && attempts.count >= 5) {
+			const timeSinceLastAttempt = Date.now() - attempts.lastAttempt.getTime();
+			if (timeSinceLastAttempt < 15 * 60 * 1000) {
+				return fail(429, {
+					message: 'För många misslyckade inloggningsförsök. Vänta 15 minuter och försök igen.'
+				});
+			} else {
+				failedAttempts.delete(clientIP);
+			}
+		}
+
 		const data = await request.formData();
-		const username = data.get('username')?.toString();
 		const email = data.get('email')?.toString();
 		const password = data.get('password')?.toString();
 
-		if (!username || username === undefined) {
-			return fail(400, { error: 'Användarnamn krävs' });
-		}
-		if (!email || email === undefined) {
-			return fail(400, { error: 'Email krävs' });
-		}
-		if (!password || password === undefined) {
-			return fail(400, { error: 'Lösenord krävs' });
+		if (!password || !email) {
+			return fail(400, { error: 'Lösenord och email krävs' });
 		}
 
 		try {
 			const user = await prisma.user.findUnique({
-				where: { username: username, email: email }
+				where: { email: email }
 			});
 
-			if (user.password === password) {
-				cookies.set('userId', user.id, {
-					path: '/',
-					maxAge: 604800,
-					secure: false, // true i production
-					httpOnly: true
+			const dummySalt = 'dummysalt123456789abcdef123456789abcdef';
+			const dummyHash = 'dummyhash123456789abcdef123456789abcdef123456789abcdef123456789abcdef';
+
+			const isValidatePassword = user
+				? validatePassword(password, user.salt, user.hash)
+				: validatePassword(password, dummySalt, dummyHash);
+
+			if (!user || !isValidatePassword) {
+				const current = failedAttempts.get(clientIP) || { count: 0, lastAttempt: new Date() };
+				failedAttempts.set(clientIP, {
+					count: current.count + 1,
+					lastAttempt: new Date()
 				});
-				throw redirect(303, '/forums');
+				return fail(400, { message: 'Ogiltig email eller lösenord' });
+			} else {
+				failedAttempts.delete(clientIP);
 			}
+
+			cookies.set('userId', user.id, {
+				path: '/',
+				maxAge: 604800,
+				secure: false, // true i production
+				httpOnly: true
+			});
+			throw redirect(307, '/forums');
 		} catch (error) {
 			if (
 				error &&

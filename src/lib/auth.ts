@@ -1,5 +1,6 @@
 import { prisma } from '$lib';
 import { redirect } from '@sveltejs/kit';
+import * as crypto from 'node:crypto';
 
 // Din uppgift: Implementera denna funktion
 export async function requireAuth(cookies: any) {
@@ -50,4 +51,21 @@ export async function getUser(cookies: any) {
 	}
 
 	return user;
+}
+
+// Function to generate a new salt and hash a password
+export function hashPassword(password: string): { salt: string; hash: string } {
+	const salt = crypto.randomBytes(16).toString('hex');
+	const hash = crypto.pbkdf2Sync(password, salt, 10000, 64, 'sha512').toString('hex');
+	return { salt, hash };
+}
+
+// Function to validate a password against a stored salt and hash
+export function validatePassword(
+	inputPassword: string,
+	storedSalt: string,
+	storedHash: string
+): boolean {
+	const hash = crypto.pbkdf2Sync(inputPassword, storedSalt, 10000, 64, 'sha512').toString('hex');
+	return storedHash === hash;
 }
