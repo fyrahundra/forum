@@ -4,11 +4,10 @@ import { Resend } from 'resend';
 import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
 import { json } from '@sveltejs/kit';
-import { RESEND_API_KEY } from '$env/static/private';
-
-const resend = new Resend(RESEND_API_KEY);
+import { env } from '$env/dynamic/private';
 
 export async function POST({ request, url }) {
+	const resend = new Resend(env.RESEND_API_KEY);
 	const { email } = await request.json();
 
 	const user = await prisma.user.findUnique({ where: { email } });
