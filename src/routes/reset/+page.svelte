@@ -87,7 +87,6 @@
 		}
 	}
 </script>
-ngknglkda
 
 <form on:submit|preventDefault={submitNewPassword}>
 	<input type="password" bind:value={newPassword} placeholder="New password" required />
