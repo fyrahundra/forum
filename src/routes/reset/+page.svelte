@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
+	import { resolve } from '$app/paths';
 
 	let token = '';
 	let newPassword = '';
@@ -36,12 +37,12 @@
 			if (data.ok) {
 				message = 'Password successfully reset! You can now log in.';
 				setTimeout(() => {
-					goto('/login');
+					goto(resolve('/login'));
 				}, 2000);
 			} else {
 				error = data.error || 'Failed to reset password.';
 			}
-		} catch (e) {
+		} catch {
 			error = 'Network error';
 		}
 	}

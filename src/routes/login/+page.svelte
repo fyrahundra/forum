@@ -29,7 +29,7 @@
 				alert('Ett fel uppstod. Försök igen senare.');
 			}
 			resetEmail = '';
-		} catch (e) {
+		} catch {
 			alert('Nätverksfel. Kontrollera din anslutning och försök igen.');
 			resetEmail = '';
 		}
