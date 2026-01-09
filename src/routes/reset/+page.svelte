@@ -12,6 +12,40 @@
 	// Grab token from URL
 	$: token = $page.url.searchParams.get('token') || '';
 
+	function validatePasswordStrength(password: string): string[] {
+		const errors: string[] = [];
+		if (password.length < 6) {
+			errors.push('Lösenord måste vara minst 6 tecken långt.');
+		}
+		if (!/[A-Z]/.test(password)) {
+			errors.push('Lösenord måste innehålla minst en stor bokstav.');
+		}
+		if (!/[a-z]/.test(password)) {
+			errors.push('Lösenord måste innehålla minst en liten bokstav.');
+		}
+		if (!/[0-9]/.test(password)) {
+			errors.push('Lösenord måste innehålla minst en siffra.');
+		}
+		if (!/[\W_]/.test(password)) {
+			errors.push('Lösenord måste innehålla minst ett specialtecken.');
+		}
+
+		const commonPasswords = [
+			'password',
+			'123456',
+			'qwerty',
+			'letmein',
+			'welcome',
+			'abc123',
+			'password123'
+		];
+		if (commonPasswords.includes(password.toLowerCase())) {
+			errors.push('Lösenord är för vanligt. Välj ett starkare lösenord.');
+		}
+
+		return errors;
+	}
+
 	async function submitNewPassword() {
 		message = '';
 		error = '';
@@ -23,6 +57,12 @@
 
 		if (newPassword !== confirmPassword) {
 			error = 'Passwords do not match.';
+			return;
+		}
+
+		const passwordErrors = validatePasswordStrength(newPassword);
+		if (passwordErrors.length > 0) {
+			error = passwordErrors.join('. ');
 			return;
 		}
 
