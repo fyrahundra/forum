@@ -16,7 +16,7 @@
 		if (!resetEmail) {
 			resetEmail = prompt('Ange din e-postadress för att återställa ditt lösenord:') || '';
 		}
-		try{
+		try {
 			const res = await fetch('/api/request-reset', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
