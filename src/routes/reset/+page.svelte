@@ -1,5 +1,6 @@
 <script lang="ts">
   import { page } from '$app/stores';
+	import { redirect } from '@sveltejs/kit';
   import { get } from 'svelte/store';
 
   let token = '';
@@ -35,6 +36,7 @@
       const data = await res.json();
       if (data.ok) {
         message = 'Password successfully reset! You can now log in.';
+        throw redirect(303, '/login');
       } else {
         error = data.error || 'Failed to reset password.';
       }
