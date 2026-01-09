@@ -23,6 +23,7 @@ model User {
 
   forums   Forum[]   @relation("ForumCreatedBy")
   messages Message[] @relation("MessageCreatedBy")
+  passwordResetTokens PasswordResetToken[]
 }
 
 model Forum {
@@ -50,6 +51,18 @@ model Message {
   user   User   @relation("MessageCreatedBy", fields: [userId], references: [id])
 
   images Image[]
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  tokenHash String
+  expiresAt DateTime
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([tokenHash])
 }
 
 model Image {

@@ -32,7 +32,9 @@
 	"dependencies": {
 		"@prisma/client": "^6.19.0",
 		"@sveltejs/adapter-node": "^5.4.0",
+		"bcryptjs": "^3.0.3",
 		"cloudinary": "^2.8.0",
+		"resend": "^6.7.0",
 		"sharp": "^0.34.5",
 		"ws": "^8.18.3"
 	},

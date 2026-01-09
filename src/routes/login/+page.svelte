@@ -10,6 +10,30 @@
 	$: doingText = isLogin ? 'Loggar in...' : 'Skapar konto...';
 
 	let loading = false;
+	let resetEmail = '';
+
+	async function resetPassword() {
+		if (!resetEmail) {
+			resetEmail = prompt('Ange din e-postadress för att återställa ditt lösenord:') || '';
+		}
+		try{
+			const res = await fetch('/api/request-reset', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ email: resetEmail })
+			});
+
+			if (res.ok) {
+				alert('Återställningslänk har skickats till din e-post.');
+			} else {
+				alert('Ett fel uppstod. Försök igen senare.');
+			}
+			resetEmail = '';
+		} catch (e) {
+			alert('Nätverksfel. Kontrollera din anslutning och försök igen.');
+			resetEmail = '';
+		}
+	}
 </script>
 
 <main>
@@ -76,6 +100,12 @@
 				<button type="button" on:click={() => (currentView = 'login')}>Logga in</button>
 			{/if}
 		</div>
+		{#if isLogin}
+			<div class="toggle-view">
+				<p>Glömt ditt lösenord?</p>
+				<button type="button" on:click={resetPassword}>Återställ Lösenord</button>
+			</div>
+		{/if}
 	</div>
 </main>
 
