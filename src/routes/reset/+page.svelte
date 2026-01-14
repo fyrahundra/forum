@@ -12,8 +12,9 @@
 	// Grab token from URL
 	$: token = $page.url.searchParams.get('token') || '';
 
-	function validatePasswordStrength(password): string[] {
-		const errors: string[] = [];
+	function validatePasswordStrength(password) {
+		const errors = [];
+
 		if (password.length < 6) {
 			errors.push('Lösenord måste vara minst 6 tecken långt.');
 		}
@@ -39,6 +40,7 @@
 			'abc123',
 			'password123'
 		];
+
 		if (commonPasswords.includes(password.toLowerCase())) {
 			errors.push('Lösenord är för vanligt. Välj ett starkare lösenord.');
 		}
