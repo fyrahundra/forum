@@ -12,7 +12,7 @@
 	// Grab token from URL
 	$: token = $page.url.searchParams.get('token') || '';
 
-	function validatePasswordStrength(password: string): string[] {
+	function validatePasswordStrength(password): string[] {
 		const errors: string[] = [];
 		if (password.length < 6) {
 			errors.push('Lösenord måste vara minst 6 tecken långt.');
