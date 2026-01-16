@@ -1,4 +1,5 @@
 <script>
+	import { resolve } from '$app/paths';
 	export let data;
 	// Data från parent + egen data
 </script>
@@ -6,9 +7,9 @@
 <div class="public-layout">
 	<header class="public-header">
 		<nav>
-			<a href="/">Home</a>
-			<a href="/forums">Forums</a>
-			<a href="/login" class="login-link">Login</a>
+			<a href={resolve('/')}>Home</a>
+			<a href={resolve('/forums')}>Forums</a>
+			<a href={resolve('/login')} class="login-link">Login</a>
 		</nav>
 	</header>
 

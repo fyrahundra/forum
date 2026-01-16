@@ -1,5 +1,6 @@
 <script>
 	import { page } from '$app/stores';
+	import { resolve } from '$app/paths';
 	export let data;
 
 	$: breadcrumbs = generateBreadcrumbs($page.url.pathname);
@@ -24,20 +25,20 @@
 <div class="public-layout">
 	<header class="public-header">
 		<nav>
-			<a href="/">Home</a>
-			<a href="/forums">Forums</a>
-			<a href="/profile">Profile</a>
+			<a href={resolve('/')}>Home</a>
+			<a href={resolve('/forums')}>Forums</a>
+			<a href={resolve('/profile')}>Profile</a>
       <div class="breadcrumbs">
-        {#each breadcrumbs as crumb, i}
+        {#each breadcrumbs as crumb, i (crumb.href)}
           {#if i < breadcrumbs.length - 1}
-            <a href={crumb.href}>{crumb.label}</a>
+            <a href={resolve(crumb.href)}>{crumb.label}</a>
             <span class="separator">›</span>
           {:else}
             <span class="current">{crumb.label}</span>
           {/if}
         {/each}
       </div>
-			<form action="/logout" method="POST" style="margin-left: auto;">
+			<form action={resolve('/logout')} method="POST" style="margin-left: auto;">
 				<button type="submit" class="logout">Logout</button>
 			</form>
 		</nav>
