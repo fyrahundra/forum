@@ -75,7 +75,7 @@
 			<div class="messages-list">
 				{#each liveMessages as message (message.id)}
 					<div class="message" in:fly={{ y: 20 }}>
-						{#if editingId === message.id}
+						{#if data.user && editingId === message.id}
 							<form
 								action="?/edit"
 								method="POST"
@@ -131,7 +131,7 @@
 									<span class="message-date">{message.createdAt.toLocaleString()}</span>
 								</div>
 							</div>
-							{#if data.user.id === message.userId}
+							{#if data.user && data.user.id === message.userId}
 								<form
 									action="?/delete"
 									method="POST"
@@ -169,60 +169,62 @@
 			</nav>
 		</section>
 
-		<aside class="actions-section">
-			{#if form?.error}
-				<p class="error">{form.error}</p>
-			{/if}
-
-			<form
-				method="POST"
-				action="?/message"
-				class="create-message-form"
-				enctype="multipart/form-data"
-				use:enhance={() => {
-					uploading = true;
-					return async ({ update }) => {
-						uploading = false;
-						images = [];
-						selectedFiles = [];
-						previewUrl = '';
-						await update();
-					};
-				}}
-			>
-				<h3>Nytt meddelande</h3>
-
-				<textarea name="content" required placeholder="Ditt meddelande..."
-					>{form?.content ?? ''}</textarea
-				>
-				{#if previewUrl}
-					<div style="overflow-x: auto; display: flex; gap: 0.5rem; margin-bottom: 0.5rem;">
-						{#each images as image, i (i)}
-							<div style="position: relative;">
-								<img src={image} alt="Preview" height="100" width="100" />
-								<button class="image_button" on:click={() => removeImage(image)}>X</button>
-							</div>
-						{/each}
-					</div>
+		{#if data.user}
+			<aside class="actions-section">
+				{#if form?.error}
+					<p class="error">{form.error}</p>
 				{/if}
-				<input
-					type="file"
-					name="attachment"
-					multiple
-					accept="image/*"
-					disabled={uploading}
-					on:change={handleFileSelect}
-					bind:this={fileInput}
-				/>
-				<button type="submit" disabled={uploading}>{uploading ? 'Skickar...' : 'Skicka'}</button>
-			</form>
 
-			<form method="GET" action="" class="search-form" use:enhance>
-				<h3>Sök</h3>
-				<input type="text" name="filter" placeholder="Sök meddelanden..." autocomplete="off" />
-				<button type="submit">Sök</button>
-			</form>
-		</aside>
+				<form
+					method="POST"
+					action="?/message"
+					class="create-message-form"
+					enctype="multipart/form-data"
+					use:enhance={() => {
+						uploading = true;
+						return async ({ update }) => {
+							uploading = false;
+							images = [];
+							selectedFiles = [];
+							previewUrl = '';
+							await update();
+						};
+					}}
+				>
+					<h3>Nytt meddelande</h3>
+
+					<textarea name="content" required placeholder="Ditt meddelande..."
+						>{form?.content ?? ''}</textarea
+					>
+					{#if previewUrl}
+						<div style="overflow-x: auto; display: flex; gap: 0.5rem; margin-bottom: 0.5rem;">
+							{#each images as image, i (i)}
+								<div style="position: relative;">
+									<img src={image} alt="Preview" height="100" width="100" />
+									<button class="image_button" on:click={() => removeImage(image)}>X</button>
+								</div>
+							{/each}
+						</div>
+					{/if}
+					<input
+						type="file"
+						name="attachment"
+						multiple
+						accept="image/*"
+						disabled={uploading}
+						on:change={handleFileSelect}
+						bind:this={fileInput}
+					/>
+					<button type="submit" disabled={uploading}>{uploading ? 'Skickar...' : 'Skicka'}</button>
+				</form>
+
+				<form method="GET" action="" class="search-form" use:enhance>
+					<h3>Sök</h3>
+					<input type="text" name="filter" placeholder="Sök meddelanden..." autocomplete="off" />
+					<button type="submit">Sök</button>
+				</form>
+			</aside>
+		{/if}
 	</div>
 </div>
 
@@ -239,13 +241,18 @@
 		color: #2c3e50;
 		padding: 2rem;
 		box-sizing: border-box;
-		background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
 		overflow: hidden;
 	}
 
 	.page-header {
 		text-align: center;
 		margin-bottom: 1.5rem;
+		max-width: 600px;
+		padding: 1rem;
+		background: rgba(255, 255, 255, 0.9);
+		border-radius: 12px;
+		box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+		text-align: center;
 	}
 
 	h1 {

@@ -2,20 +2,30 @@
 	import { resolve } from '$app/paths';
 </script>
 
-<h1>Välkommen!</h1>
-<p>Utforska våra forum och delta i diskussionerna!</p>
-<a href={resolve('/forums')}>Tillbaka till forumen</a>
-<p class="note">(Tryck på meddelanden för att kunna uppdatera dem)</p>
+<div class="container">
+	<h1>Välkommen!</h1>
+	<p>Utforska våra forum och delta i diskussionerna!</p>
+	<a href={resolve('/forums')}>Tillbaka till forumen</a>
+	<p class="note">(Tryck på meddelanden för att kunna uppdatera dem)</p>
+</div>
 
 <style>
+	.container {
+		max-width: 600px;
+		margin: 4rem auto;
+		padding: 2rem;
+		background: rgba(255, 255, 255, 0.9);
+		border-radius: 12px;
+		box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+		text-align: center;
+	}
+
 	h1 {
 		font-size: 3.5rem;
 		margin-bottom: 1.5rem;
-		color: #2c3e50;
+		color: #333;
 		font-weight: 800;
-		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 		-webkit-background-clip: text;
-		-webkit-text-fill-color: transparent;
 		background-clip: text;
 	}
 

@@ -8,7 +8,7 @@ import { validateImageFile } from '$lib/validation';
 import { cloudinary } from '$lib/cloudinary';
 
 export const load: ServerLoad = async ({ params, url, cookies }) => {
-	const user = await requireAuth(cookies);
+	const user = await getUser(cookies);
 	const filter = url.searchParams.get('filter');
 	const forumName = params.forum;
 	const page = Number(url.searchParams.get('page') ?? 1);
