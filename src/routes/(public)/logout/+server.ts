@@ -1,5 +1,5 @@
 import { redirect } from '@sveltejs/kit';
-import { prisma } from "$lib"
+import { prisma } from '$lib';
 
 export const POST = async ({ cookies }) => {
 	await prisma.session.deleteMany({

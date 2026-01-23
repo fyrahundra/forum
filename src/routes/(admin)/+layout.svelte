@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
+	import { resolve } from '$app/paths';
 	export let data;
 	import { navigating } from '$app/stores';
 </script>
@@ -14,7 +15,7 @@
 	<header>
 		<button
 			onclick={() => {
-				goto('/forums');
+				goto(resolve('/forums'));
 			}}>←</button
 		>
 		<h1>Admin Dashboard</h1>

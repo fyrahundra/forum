@@ -5,7 +5,7 @@
 <h1>Active Sessions</h1>
 
 <div class="sessions">
-	{#each data.sessions as session}
+	{#each data.sessions as session (session.id)}
 		<div class="session-card">
 			<div class="device-info">
 				<strong>{session.deviceName || 'Unknown Device'}</strong>

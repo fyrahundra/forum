@@ -1,15 +1,5 @@
 <script lang="ts">
-	export let data: {
-		activeSessions: {
-			id: string;
-			token: string;
-			deviceName: string | null;
-			createdAt: string;
-			lastUsed: string;
-			expiresAt: string;
-			user: { id: string; username: string; email: string; role: string } | null;
-		}[];
-	};
+	export let data;
 </script>
 
 <h2 class="page-title">Active Sessions</h2>
@@ -25,10 +15,11 @@
 			<th>Created At</th>
 			<th>Last Used</th>
 			<th>Expires At</th>
+			<th>Country</th>
 		</tr>
 	</thead>
 	<tbody>
-		{#each data.activeSessions as session}
+		{#each data.activeSessions as session (session.id)}
 			<tr>
 				<td>{session.user?.username ?? 'Unknown'}</td>
 				<td>{session.user?.email ?? '-'}</td>
@@ -38,6 +29,7 @@
 				<td>{new Date(session.createdAt).toLocaleString()}</td>
 				<td>{new Date(session.lastUsed).toLocaleString()}</td>
 				<td>{new Date(session.expiresAt).toLocaleString()}</td>
+				<td>{data.countries[data.activeSessions.indexOf(session)] ?? '-'}</td>
 			</tr>
 		{/each}
 	</tbody>

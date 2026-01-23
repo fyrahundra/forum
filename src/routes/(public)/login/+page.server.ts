@@ -103,7 +103,12 @@ export const actions: Actions = {
 			}
 		});
 
-		const session = await createSession(newUser.id, request.headers.get('user-agent') || '', request.headers.get('x-forwarded-for') || '', 14);
+		const session = await createSession(
+			newUser.id,
+			request.headers.get('user-agent') || '',
+			request.headers.get('x-forwarded-for') || '',
+			14
+		);
 
 		// Skapa session cookie
 		cookies.set('sessionToken', session.token, {

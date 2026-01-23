@@ -1,5 +1,6 @@
 import type { PageServerLoad } from './$types';
 import { prisma } from '$lib';
+import { getCuntrtyFromIP } from '$lib/auth';
 
 export const load: PageServerLoad = async () => {
 	const now = new Date();
@@ -12,5 +13,9 @@ export const load: PageServerLoad = async () => {
 		orderBy: { lastUsed: 'desc' }
 	});
 
-	return { activeSessions };
+	const countries = await Promise.all(
+		activeSessions.map(session => getCuntrtyFromIP(session.ipAddress))
+	);
+
+	return { activeSessions, countries };
 };
