@@ -111,7 +111,7 @@ export async function getCuntrtyFromIP(ipAddress: string): Promise<string | null
 	if (!ipAddress) return null;
 
 	try {
-		const response = await fetch(`https://ipapi.co/${ipAddress}/country/`);
+		const response = await fetch(`https://ipapi.co/${ipAddress}/country_name/`);
 		if (response.ok) {
 			const countryCode = await response.text();
 			return countryCode;
