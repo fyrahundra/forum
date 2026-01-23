@@ -7,6 +7,7 @@
 <svelte:head>
 	<title>Forum App</title>
 	<meta name="description" content="Reset your password" />
+	<link rel="icon" href="/favicon.ico" />
 </svelte:head>
 
 {#if $navigating}
