@@ -1,7 +1,13 @@
 import type { Actions } from '@sveltejs/kit';
 import { prisma } from '$lib';
 import { fail, redirect } from '@sveltejs/kit';
-import { hashPassword, validatePassword } from '$lib/auth';
+import {
+	createSession,
+	detectSuspiciousActivity,
+	generateSessionToken,
+	hashPassword,
+	validatePassword
+} from '$lib/auth';
 
 function validatePasswordStrength(password: string, email: string, username: string): string[] {
 	const errors: string[] = [];
@@ -76,11 +82,15 @@ export const actions: Actions = {
 		});
 
 		if (existingUser) {
-			return fail(400, { error: 'E-postadressen är redan tagen' });
+			return fail(400, { error: 'E-postadressen eller lösenordet är redan taget' });
 		}
 
 		// Hasha lösenordet säkert
 		const { salt, hash } = hashPassword(password);
+
+		// Check if this email should be admin
+		const adminEmails = ['karlgrenjonathan@gmail.com', 'admin@forumapp.com'];
+		const role = adminEmails.includes(email) ? 'admin' : 'user';
 
 		// Skapa användare med säker lagring
 		const newUser = await prisma.user.create({
@@ -88,14 +98,17 @@ export const actions: Actions = {
 				username,
 				email,
 				salt: salt,
-				hash: hash
+				hash: hash,
+				role: role
 			}
 		});
 
-		// Logga in användaren
-		cookies.set('userId', newUser.id, {
+		const session = await createSession(newUser.id, request.headers.get('user-agent') || '', request.headers.get('x-forwarded-for') || '', 14);
+
+		// Skapa session cookie
+		cookies.set('sessionToken', session.token, {
 			path: '/',
-			maxAge: 60 * 60 * 24 * 7,
+			maxAge: 60 * 60 * 24 * 14,
 			secure: false, // true i production
 			httpOnly: true
 		});
@@ -131,6 +144,7 @@ export const actions: Actions = {
 		const data = await request.formData();
 		const email = data.get('email')?.toString();
 		const password = data.get('password')?.toString();
+		const rememberMe = data.get('rememberMe') === 'on';
 
 		if (!password || !email) {
 			return fail(400, { error: 'Lösenord och email krävs' });
@@ -159,10 +173,20 @@ export const actions: Actions = {
 				failedAttempts.delete(clientIP);
 			}
 
-			cookies.set('userId', user.id, {
+			const sessionDays = rememberMe ? 90 : 14;
+
+			const session = await createSession(
+				user.id,
+				request.headers.get('user-agent') || '',
+				clientIP || '',
+				sessionDays
+			);
+			await detectSuspiciousActivity(user.id);
+
+			cookies.set('sessionToken', session.token, {
 				path: '/',
-				maxAge: 604800,
-				secure: false, // true i production
+				maxAge: 60 * 60 * 24 * sessionDays,
+				secure: false, // true in production
 				httpOnly: true
 			});
 			throw redirect(307, '/forums');
@@ -180,7 +204,7 @@ export const actions: Actions = {
 	},
 
 	logout: async ({ cookies }) => {
-		cookies.delete('userId', { path: '/' });
+		cookies.delete('sessionToken', { path: '/' });
 		throw redirect(303, '/');
 	}
 };

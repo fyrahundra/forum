@@ -82,6 +82,11 @@
 				autocomplete="off"
 			/>
 
+			<label for="rememberMe"
+				>Kom ihåg mig:
+				<input id="rememberMe" type="checkbox" name="rememberMe" />
+			</label>
+
 			<button type="submit" disabled={loading}>
 				{loading ? doingText : buttonText}
 			</button>

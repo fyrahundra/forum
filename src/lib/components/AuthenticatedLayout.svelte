@@ -6,19 +6,19 @@
 	$: breadcrumbs = generateBreadcrumbs($page.url.pathname);
 
 	function generateBreadcrumbs(pathname) {
-    const segments = pathname.split('/').filter(Boolean);
-    const crumbs = [];
-    let accumulatedPath = '';
+		const segments = pathname.split('/').filter(Boolean);
+		const crumbs = [];
+		let accumulatedPath = '';
 
-    segments.forEach((segment) => {
-        accumulatedPath += `/${segment}`;
-        crumbs.push({
-            label: decodeURIComponent(segment),
-            href: accumulatedPath
-        });
-    });
-    return crumbs;
-  }
+		segments.forEach((segment) => {
+			accumulatedPath += `/${segment}`;
+			crumbs.push({
+				label: decodeURIComponent(segment),
+				href: accumulatedPath
+			});
+		});
+		return crumbs;
+	}
 	// Data från parent + egen data
 </script>
 
@@ -28,16 +28,19 @@
 			<a href={resolve('/')}>Home</a>
 			<a href={resolve('/forums')}>Forums</a>
 			<a href={resolve('/profile')}>Profile</a>
-      <div class="breadcrumbs">
-        {#each breadcrumbs as crumb, i (crumb.href)}
-          {#if i < breadcrumbs.length - 1}
-            <a href={resolve(crumb.href)}>{crumb.label}</a>
-            <span class="separator">›</span>
-          {:else}
-            <span class="current">{crumb.label}</span>
-          {/if}
-        {/each}
-      </div>
+			{#if data.user.role === 'admin'}
+				<a href={resolve('/admin_dashboard')}>Admin Dashboard</a>
+			{/if}
+			<div class="breadcrumbs">
+				{#each breadcrumbs as crumb, i (crumb.href)}
+					{#if i < breadcrumbs.length - 1}
+						<a href={resolve(crumb.href)}>{crumb.label}</a>
+						<span class="separator">›</span>
+					{:else}
+						<span class="current">{crumb.label}</span>
+					{/if}
+				{/each}
+			</div>
 			<form action={resolve('/logout')} method="POST" style="margin-left: auto;">
 				<button type="submit" class="logout">Logout</button>
 			</form>
@@ -109,26 +112,25 @@
 		/* Content area styling */
 	}
 
-  .breadcrumbs {
-    display: flex;
-    align-items: center;
-    font-size: 0.9rem;
-    color: #666;
-    margin-left: auto;
-    flex-wrap: wrap;
-    
-  }
+	.breadcrumbs {
+		display: flex;
+		align-items: center;
+		font-size: 0.9rem;
+		color: #666;
+		margin-left: auto;
+		flex-wrap: wrap;
+	}
 
-  .breadcrumbs a {
-    text-decoration: none;
-  }
+	.breadcrumbs a {
+		text-decoration: none;
+	}
 
-  .separator {
-    margin: 0 0.2rem;
-  }
+	.separator {
+		margin: 0 0.2rem;
+	}
 
-  .current {
-    font-weight: bold;
-    color: #333;
-  }
+	.current {
+		font-weight: bold;
+		color: #333;
+	}
 </style>
