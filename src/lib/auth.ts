@@ -97,7 +97,7 @@ export async function detectSuspiciousActivity(userId: string) {
 	// - Sessions från olika länder
 	const countries = new Set<string>();
 	for (const session of sessions) {
-		const country = await getCuntrtyFromIP(session.ipAddress);
+		const country = await getCountryFromIP(session.ipAddress);
 		if (country) {
 			countries.add(country);
 		}
@@ -107,7 +107,7 @@ export async function detectSuspiciousActivity(userId: string) {
 	}
 }
 
-export async function getCuntrtyFromIP(ipAddress: string): Promise<string | null> {  
+export async function getCountryFromIP(ipAddress: string): Promise<string | null> {  
 	//På grund av ipapi.co returneras 429 ibland istället för ok svar
 	if (!ipAddress) return null;
 

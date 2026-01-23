@@ -1,12 +1,12 @@
 import { error, fail, redirect } from '@sveltejs/kit';
 import type { Actions, ServerLoad } from '@sveltejs/kit';
-import { validateSession, getCuntrtyFromIP } from '$lib/auth';
+import { validateSession, getCountryFromIP } from '$lib/auth';
 import { prisma } from '$lib';
 
 export const load: ServerLoad = async ({ cookies }) => {
 	const sessionToken = cookies.get('sessionToken');
 	const currentSession = await validateSession(sessionToken);
-	const country = (await getCuntrtyFromIP(currentSession.ipAddress)) || 'Unknown';
+	const country = (await getCountryFromIP(currentSession.ipAddress)) || 'Unknown';
 
 	if (!currentSession) {
 		throw redirect(307, '/login');
