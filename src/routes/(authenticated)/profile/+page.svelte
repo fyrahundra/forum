@@ -15,7 +15,7 @@
 	}
 </script>
 
-<h1>Profil</h1>
+<h1>Profile</h1>
 {#if data && data.user}
 	<!-- Fil-form behöver speciell encoding -->
 	<form
@@ -51,6 +51,10 @@
 		{/if}
 		<p><strong>Användarnamn:</strong> {data.user.username}</p>
 		<p><strong>E-post:</strong> {data.user.email}</p>
+	</div>
+
+	<div class="profile-links">
+		<a href="/sessions">Active Sessions</a>
 	</div>
 {:else}
 	<p>Du är inte inloggad.</p>
@@ -156,6 +160,16 @@
 		box-shadow: 0 8px 24px rgba(102, 126, 234, 0.3);
 		display: block;
 		object-fit: cover;
+	}
+
+	.profile-links {
+		background: white;
+		padding: 1rem;
+		border-radius: 16px;
+		box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+		max-width: 150px;
+		margin: 0.5rem auto;
+		text-align: center;
 	}
 
 	p {
