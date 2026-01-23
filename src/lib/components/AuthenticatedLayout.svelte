@@ -60,15 +60,22 @@
 	}
 
 	.public-header {
-		background-color: rgba(255, 255, 255);
-		padding: 1rem;
-		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-		width: 98%;
+		background-color: rgba(255, 255, 255, 0.95);
+		padding: 1rem 2rem;
+		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+		position: fixed;
+		top: 0;
+		left: 0;
+		right: 0;
+		z-index: 1000;
+		backdrop-filter: blur(10px);
 	}
 
 	.public-header nav {
 		display: flex;
 		align-items: center;
+		max-width: 1400px;
+		margin: 0 auto;
 	}
 
 	nav a {
@@ -107,8 +114,8 @@
 
 	.public-main {
 		flex: 1;
-		width: 100vw;
-		height: 100vh;
+		width: 100%;
+		padding-top: 80px;
 		/* Content area styling */
 	}
 
