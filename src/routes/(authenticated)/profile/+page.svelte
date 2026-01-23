@@ -1,5 +1,6 @@
 <script>
 	import { enhance } from '$app/forms';
+	import { resolve } from '$app/paths';
 	export let data;
 
 	let previewUrl = '';
@@ -54,7 +55,7 @@
 	</div>
 
 	<div class="profile-links">
-		<a href="/sessions">Active Sessions</a>
+		<a href={resolve("/sessions")}>Active Sessions</a>
 	</div>
 {:else}
 	<p>Du är inte inloggad.</p>
