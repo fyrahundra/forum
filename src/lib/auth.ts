@@ -112,6 +112,7 @@ export async function getCuntrtyFromIP(ipAddress: string): Promise<string | null
 
 	try {
 		const response = await fetch(`https://ipapi.co/${ipAddress}/country_name/`);
+		console.log('IP Geolocation response status:', response.status);
 		if (response.ok) {
 			const countryCode = await response.text();
 			return countryCode;
