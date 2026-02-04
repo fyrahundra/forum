@@ -5,12 +5,13 @@
 	import { fly } from 'svelte/transition';
 	import { invalidateAll } from '$app/navigation';
 	import { onDestroy } from 'svelte';
+	import { SvelteSet } from 'svelte/reactivity';
 	import { browser } from '$app/environment';
 
 	export let data, form;
 
 	let messages = [...data.messages];
-	let loadedPages = new Set([data.page]);
+	let loadedPages = new SvelteSet([data.page]);
 	let currentMinPage = data.page;
 	let currentMaxPage = data.page;
 	let isLoadingTop = false;
@@ -24,13 +25,11 @@
 
 	// Update messages from data when forum or page changes
 	let lastForumId = data.forum.id;
-	let lastPage = data.page;
 
 	$: if (data.forum.id !== lastForumId) {
 		lastForumId = data.forum.id;
-		lastPage = data.page;
 		messages = [...data.messages];
-		loadedPages = new Set([data.page]);
+		loadedPages = new SvelteSet([data.page]);
 		currentMinPage = data.page;
 		currentMaxPage = data.page;
 		hasNewMessages = false;
@@ -58,14 +57,16 @@
 		.map(([, username]) => username);
 
 	function setupSSE() {
-		const eventSource = new EventSource(`/chat-stream?channel=${encodeURIComponent(data.forum.id)}`);
+		const eventSource = new EventSource(
+			`/chat-stream?channel=${encodeURIComponent(data.forum.id)}`
+		);
 
 		eventSource.onopen = () => {
 			connectionStatus = 'Connected';
 			connectionAtempts = 0;
 		};
 
-		eventSource.onerror = (error) => {
+		eventSource.onerror = () => {
 			connectionStatus = 'Disconnected';
 
 			if (connectionAtempts < maxConnectionAttempts) {
@@ -147,7 +148,7 @@
 					...msg,
 					createdAt: new Date(msg.createdAt)
 				}));
-				
+
 				loadedPages.add(prevPage);
 				currentMinPage = prevPage;
 
@@ -156,13 +157,16 @@
 					const pageToRemove = currentMaxPage;
 					const pageSize = 10;
 					// Remove from the end (oldest messages)
-					const messageIds = new Set(newMessages.map(m => m.id));
-					messages = [...newMessages, ...messages.filter(m => !messageIds.has(m.id))].slice(0, -pageSize);
+					const messageIds = new Set(newMessages.map((m) => m.id));
+					messages = [...newMessages, ...messages.filter((m) => !messageIds.has(m.id))].slice(
+						0,
+						-pageSize
+					);
 					loadedPages.delete(pageToRemove);
 					currentMaxPage--;
 				} else {
-					const existingIds = new Set(messages.map(m => m.id));
-					const uniqueNewMessages = newMessages.filter(m => !existingIds.has(m.id));
+					const existingIds = new Set(messages.map((m) => m.id));
+					const uniqueNewMessages = newMessages.filter((m) => !existingIds.has(m.id));
 					messages = [...uniqueNewMessages, ...messages];
 				}
 			}
@@ -189,7 +193,7 @@
 					...msg,
 					createdAt: new Date(msg.createdAt)
 				}));
-				
+
 				loadedPages.add(nextPage);
 				currentMaxPage = nextPage;
 
@@ -198,13 +202,15 @@
 					const pageToRemove = currentMinPage;
 					const pageSize = 10;
 					// Remove from the beginning (newest messages)
-					const messageIds = new Set(newMessages.map(m => m.id));
-					messages = [...messages.filter(m => !messageIds.has(m.id)), ...newMessages].slice(pageSize);
+					const messageIds = new Set(newMessages.map((m) => m.id));
+					messages = [...messages.filter((m) => !messageIds.has(m.id)), ...newMessages].slice(
+						pageSize
+					);
 					loadedPages.delete(pageToRemove);
 					currentMinPage++;
 				} else {
-					const existingIds = new Set(messages.map(m => m.id));
-					const uniqueNewMessages = newMessages.filter(m => !existingIds.has(m.id));
+					const existingIds = new Set(messages.map((m) => m.id));
+					const uniqueNewMessages = newMessages.filter((m) => !existingIds.has(m.id));
 					messages = [...messages, ...uniqueNewMessages];
 				}
 			}
@@ -232,53 +238,64 @@
 				case 'connect':
 					console.log('SSE Connected:', data.message);
 					return;
-				case 'typing':
+				case 'typing': {
 					// Hantera typing-indikator här om du vill
 					typingUsers[data.user.id] = data.user.username;
 					typingUsers = { ...typingUsers };
 					break;
-				case 'stop_typing':
+				}
+				case 'stop_typing': {
 					// Hantera stop_typing här om du vill
 					delete typingUsers[data.user.id];
 					typingUsers = { ...typingUsers };
 					break;
-				case 'new_message':
+				}
+				case 'new_message': {
 					// Convert createdAt string to Date object
 					data.message.createdAt = new Date(data.message.createdAt);
-				// Only add message if on first page
-				if (currentMinPage === 1) {
-					if (!messages.some(m => m.id === data.message.id)) {
-						messages = [data.message, ...messages];
+					// Only add message if on first page
+					if (currentMinPage === 1) {
+						if (!messages.some((m) => m.id === data.message.id)) {
+							messages = [data.message, ...messages];
+						}
+					} else {
+						hasNewMessages = true;
 					}
-				} else {
-					hasNewMessages = true;
-				}
-				// Send push notification for new message to other users
-				const authorId = data.message.user?.id;
-				const currentUserId = data.user?.id;
-				console.log('Message received - Author ID:', authorId, 'Current User ID:', currentUserId, 'Should notify:', authorId !== currentUserId);
-				if (authorId !== currentUserId) {
-					console.log('Sending notification...');
-					sendPushNotification('🔔 Nytt meddelande', {
-						body: `${data.message.author}: ${data.message.content.substring(0, 50)}${data.message.content.length > 50 ? '...' : ''}`
-					});
-				} else {
-					console.log('Not sending notification - same user');
-				}
+					// Send push notification for new message to other users
+					const authorId = data.message.user?.id;
+					const currentUserId = data.user?.id;
+					console.log(
+						'Message received - Author ID:',
+						authorId,
+						'Current User ID:',
+						currentUserId,
+						'Should notify:',
+						authorId !== currentUserId
+					);
+					if (authorId !== currentUserId) {
+						console.log('Sending notification...');
+						sendPushNotification('🔔 Nytt meddelande', {
+							body: `${data.message.author}: ${data.message.content.substring(0, 50)}${data.message.content.length > 50 ? '...' : ''}`
+						});
+					} else {
+						console.log('Not sending notification - same user');
+					}
 					break;
-				case 'initial_messages':
+				}
+				case 'initial_messages': {
 					// Convert createdAt strings to Date objects
 					const initialMessages = data.messages.map((msg) => {
 						return { ...msg, createdAt: new Date(msg.createdAt) };
 					});
 					messages = initialMessages;
 					break;
+				}
 				default:
 					console.warn('Unknown SSE message type:', data.type);
 			}
 		};
 
-		eventSource.onerror = (error) => {
+		eventSource.onerror = () => {
 			// Vad ska hända vid fel?
 			// Tips: Uppdatera connectionStatus
 			connectionStatus = 'Disconnected';

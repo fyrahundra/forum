@@ -65,7 +65,7 @@ export const actions = {
 		const forumName = params.forum;
 		const forum = await prisma.forum.findUnique({ where: { name: forumName } });
 		if (!forum) return fail(404, { error: 'Forum not found' });
-		
+
 		const data = await request.formData();
 		const userId = data.get('userId')?.toString();
 		const username = data.get('username')?.toString();
@@ -91,7 +91,7 @@ export const actions = {
 		const forumName = params.forum;
 		const forum = await prisma.forum.findUnique({ where: { name: forumName } });
 		if (!forum) return fail(404, { error: 'Forum not found' });
-		
+
 		const data = await request.formData();
 		const userId = data.get('userId')?.toString();
 
@@ -126,7 +126,9 @@ export const actions = {
 
 		// Rate limiting: minst 2 sekunder mellan meddelanden
 		if (Date.now() - lastMessageTime < 2000) {
-			return fail(429, { error: 'Du skickar meddelanden för snabbt. Vänta lite innan du skickar igen.' });
+			return fail(429, {
+				error: 'Du skickar meddelanden för snabbt. Vänta lite innan du skickar igen.'
+			});
 		}
 
 		userLastMessage.set(user.id, Date.now());

@@ -6,7 +6,10 @@
 	import { browser } from '$app/environment';
 
 	export let data, form;
-	$: liveData = data.forums;
+	let liveData = data.forums;
+	$: if (data.forums !== liveData) {
+		liveData = data.forums;
+	}
 
 	let editingID = null;
 	let activeUsersPerForum = {};
@@ -61,9 +64,9 @@
 						<a class="forum-link" href={resolve(`/forums/${forum.name}`)}>
 							Forum: {forum.name}
 						</a>
-					{#if activeUsersPerForum[forum.id]}
-						<span class="active-users">🟢 {activeUsersPerForum[forum.id]} aktiva</span>
-					{/if}
+						{#if activeUsersPerForum[forum.id]}
+							<span class="active-users">🟢 {activeUsersPerForum[forum.id]} aktiva</span>
+						{/if}
 						{#if forum.id === editingID}
 							<form action="?/edit" method="POST" class="edit-form" use:enhance>
 								<input type="hidden" name="id" value={forum.id} />

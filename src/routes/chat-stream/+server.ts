@@ -47,19 +47,19 @@ export const GET: RequestHandler = async ({ cookies, url }) => {
 					removeStream(connection);
 				}
 			}, 30000);
-			
+
 			// Register to channel
 			const streams = channelStreams.get(channel) || [];
 			streams.push(connection);
 			channelStreams.set(channel, streams);
-			
+
 			const initialData = {
 				type: 'connect',
 				message: 'Stream connected',
 				timestamp: new Date().toISOString()
 			};
 			controller.enqueue(`data: ${JSON.stringify(initialData)}\n\n`);
-			
+
 			// Broadcast updated channel stats to all clients
 			_broadcastChannelStats();
 		},
@@ -68,10 +68,10 @@ export const GET: RequestHandler = async ({ cookies, url }) => {
 			// Vad ska hända när klient kopplar från?
 			// Tips: Ta bort controller från activeStreams
 			removeStream(connection);
-			
+
 			// Remove from channel
 			removeStreamFromChannel(channel, connection);
-			
+
 			// Broadcast updated channel stats to all clients
 			_broadcastChannelStats();
 		}
@@ -183,13 +183,13 @@ export function _broadcastUserList() {
 
 export function _broadcastChannelStats() {
 	const stats: Record<string, number> = {};
-	
+
 	for (const [channelId, streams] of channelStreams.entries()) {
 		if (channelId !== 'global') {
 			stats[channelId] = streams.length;
 		}
 	}
-	
+
 	_broadcastToAllClients({
 		type: 'channel_stats',
 		stats
