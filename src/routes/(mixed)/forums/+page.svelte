@@ -7,7 +7,9 @@
 
 	export let data, form;
 	let liveData = data.forums;
-	$: if (data.forums !== liveData) {
+	let lastForums = data.forums;
+	$: if (data.forums !== lastForums) {
+		lastForums = data.forums;
 		liveData = data.forums;
 	}
 

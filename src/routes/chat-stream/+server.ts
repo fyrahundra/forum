@@ -1,6 +1,6 @@
 import type { RequestHandler } from '@sveltejs/kit';
 import { getUser } from '$lib/auth';
-import { encode } from 'punycode';
+import { randomUUID } from 'crypto';
 
 // Global array för att hålla aktiva streams
 // I en riktig app skulle du använda Redis eller liknande
@@ -17,9 +17,6 @@ export const GET: RequestHandler = async ({ cookies, url }) => {
 	// Din uppgift: Skapa en ReadableStream
 
 	const user = await getUser(cookies);
-	if (!user) {
-		return new Response('Unauthorized', { status: 401 });
-	}
 
 	const channel = url.searchParams.get('channel') || 'global';
 
@@ -31,7 +28,7 @@ export const GET: RequestHandler = async ({ cookies, url }) => {
 			// Tips: Lägg till controller i activeStreams array
 			// Tips: Skicka initial data till ny klient
 			connection = {
-				userId: user.id,
+				userId: user?.id ?? `anon-${randomUUID()}`,
 				controller: controller,
 				createdAt: new Date()
 			};
