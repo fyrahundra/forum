@@ -1,10 +1,12 @@
 <script>
-	import { enhance } from '$app/forms';
+	import { applyAction } from '$app/forms';
 	import { resolve } from '$app/paths';
 	export let data;
 
 	let previewUrl = '';
 	let uploading = false;
+	let uploadProgress = 0;
+	let uploadError = '';
 
 	function handleFileSelect(event) {
 		const file = event.target.files[0];
@@ -13,6 +15,56 @@
 			// Tips: URL.createObjectURL() eller FileReader
 			previewUrl = URL.createObjectURL(file);
 		}
+	}
+
+	function handleUploadSubmit(event) {
+		event.preventDefault();
+		if (uploading) return;
+
+		const formEl = event.currentTarget;
+		const formData = new FormData(formEl);
+
+		uploading = true;
+		uploadProgress = 0;
+		uploadError = '';
+
+		const xhr = new XMLHttpRequest();
+		xhr.open(formEl.method || 'POST', formEl.action);
+		xhr.setRequestHeader('Accept', 'application/json');
+
+		xhr.upload.onprogress = (e) => {
+			if (e.lengthComputable) {
+				uploadProgress = Math.round((e.loaded / e.total) * 100);
+			}
+		};
+
+		xhr.onload = async () => {
+			uploading = false;
+			uploadProgress = 0;
+
+			let result;
+			try {
+				result = JSON.parse(xhr.responseText);
+				await applyAction(result);
+			} catch (error) {
+				console.error('Failed to apply action result', error);
+			}
+
+			if (result?.type === 'success' || (xhr.status >= 200 && xhr.status < 300)) {
+				previewUrl = '';
+				formEl.reset();
+			} else {
+				uploadError = result?.data?.error ?? 'Uppladdningen misslyckades. Försök igen.';
+			}
+		};
+
+		xhr.onerror = () => {
+			uploading = false;
+			uploadProgress = 0;
+			uploadError = 'Nätverksfel. Kontrollera anslutningen och försök igen.';
+		};
+
+		xhr.send(formData);
 	}
 </script>
 
@@ -23,14 +75,7 @@
 		method="POST"
 		action="?/uploadToFile"
 		enctype="multipart/form-data"
-		use:enhance={() => {
-			uploading = true;
-			return async ({ update }) => {
-				await update();
-				uploading = false;
-				previewUrl = '';
-			};
-		}}
+		on:submit={handleUploadSubmit}
 	>
 		<input
 			type="file"
@@ -41,6 +86,15 @@
 		/>
 		{#if previewUrl}
 			<img src={previewUrl} alt="Preview" height="150" width="150" />
+		{/if}
+		{#if uploading}
+			<div class="progress">
+				<div class="progress-bar" style={`width: ${uploadProgress}%`}></div>
+			</div>
+			<p class="progress-text">{uploadProgress}%</p>
+		{/if}
+		{#if uploadError}
+			<p class="error">{uploadError}</p>
 		{/if}
 		<button disabled={uploading}>{uploading ? 'Laddar upp...' : 'Ladda upp profilbild'}</button>
 		<input type="hidden" name="userId" value={data.user.id} />
@@ -55,7 +109,7 @@
 	</div>
 
 	<div class="profile-links">
-		<a href={resolve("/sessions")}>Active Sessions</a>
+		<a href={resolve('/sessions')}>Active Sessions</a>
 	</div>
 {:else}
 	<p>Du är inte inloggad.</p>
@@ -128,7 +182,9 @@
 		font-size: 1rem;
 		font-weight: 600;
 		cursor: pointer;
-		transition: transform 0.2s, box-shadow 0.2s;
+		transition:
+			transform 0.2s,
+			box-shadow 0.2s;
 		box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
 	}
 
@@ -140,6 +196,39 @@
 	button:disabled {
 		opacity: 0.6;
 		cursor: not-allowed;
+	}
+
+	.progress {
+		width: 100%;
+		height: 10px;
+		background: #e2e8f0;
+		border-radius: 999px;
+		overflow: hidden;
+		margin: 0.5rem 0 0.25rem;
+	}
+
+	.progress-bar {
+		height: 100%;
+		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+		transition: width 0.2s ease;
+	}
+
+	.progress-text {
+		text-align: center;
+		color: #4a5568;
+		font-size: 0.9rem;
+		margin: 0 0 0.5rem;
+	}
+
+	.error {
+		color: #e53e3e;
+		background-color: #fff5f5;
+		padding: 0.75rem;
+		border-radius: 8px;
+		border-left: 4px solid #e53e3e;
+		font-weight: 500;
+		font-size: 0.9rem;
+		margin: 0.5rem 0;
 	}
 
 	.user-info {

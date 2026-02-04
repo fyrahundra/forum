@@ -3,6 +3,7 @@ import type { ServerLoad, Actions } from '@sveltejs/kit';
 import { prisma } from '$lib';
 import { fail } from '@sveltejs/kit';
 import { getUser, requireAuth } from '$lib/auth';
+import { _broadcastToAllClients } from '../../chat-stream/+server';
 
 export const load = (async ({ url, params, cookies }) => {
 	const user = await getUser(cookies);
@@ -47,12 +48,22 @@ export const actions = {
 		try {
 			// Hur skulle du skapa ett nytt forum?
 			// Tips: prisma.forum.create({ data: { ... } })
-			await prisma.forum.create({
+			const newForum = await prisma.forum.create({
 				data: {
 					name,
 					description,
 					user: { connect: { id: userId } }
+				},
+				include: {
+					_count: {
+						select: { messages: true }
+					}
 				}
+			});
+
+			_broadcastToAllClients({
+				type: 'new_forum',
+				forum: newForum
 			});
 
 			return { success: true };
@@ -77,6 +88,11 @@ export const actions = {
 			await prisma.forum.delete({
 				where: { id: forumId }
 			});
+
+			_broadcastToAllClients({
+				type: 'delete_forum',
+				forumId
+			});
 		} catch (error) {
 			console.error(error);
 			return fail(500, { error: 'Något gick fel vid borttagning' });
@@ -95,6 +111,12 @@ export const actions = {
 			await prisma.forum.update({
 				where: { id: forumId },
 				data: { description: newDescription }
+			});
+
+			_broadcastToAllClients({
+				type: 'edit_forum',
+				forumId,
+				description: newDescription
 			});
 		} catch (error) {
 			console.error(error);

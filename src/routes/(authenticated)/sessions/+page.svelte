@@ -67,7 +67,9 @@
 		border-radius: 16px;
 		padding: 1.5rem;
 		box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-		transition: transform 0.3s, box-shadow 0.3s;
+		transition:
+			transform 0.3s,
+			box-shadow 0.3s;
 		display: flex;
 		flex-direction: column;
 		gap: 1rem;
@@ -146,7 +148,9 @@
 		font-size: 0.95rem;
 		font-weight: 600;
 		cursor: pointer;
-		transition: transform 0.2s, box-shadow 0.2s;
+		transition:
+			transform 0.2s,
+			box-shadow 0.2s;
 		box-shadow: 0 4px 12px rgba(245, 101, 101, 0.3);
 	}
 

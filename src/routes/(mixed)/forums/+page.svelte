@@ -2,11 +2,43 @@
 	import { resolve } from '$app/paths';
 	import { enhance } from '$app/forms';
 	import { fly } from 'svelte/transition';
+	import { onDestroy } from 'svelte';
+	import { browser } from '$app/environment';
 
 	export let data, form;
 	$: liveData = data.forums;
 
 	let editingID = null;
+	let activeUsersPerForum = {};
+
+	if (browser) {
+		const eventSource = new EventSource('/chat-stream');
+
+		eventSource.onmessage = (event) => {
+			const message = JSON.parse(event.data);
+
+			switch (message.type) {
+				case 'new_forum':
+					liveData = [message.forum, ...liveData];
+					break;
+				case 'delete_forum':
+					liveData = liveData.filter((f) => f.id !== message.forumId);
+					break;
+				case 'edit_forum':
+					liveData = liveData.map((f) =>
+						f.id === message.forumId ? { ...f, description: message.description } : f
+					);
+					break;
+				case 'channel_stats':
+					activeUsersPerForum = message.stats;
+					break;
+			}
+		};
+
+		onDestroy(() => {
+			eventSource.close();
+		});
+	}
 </script>
 
 <div class="page-container">
@@ -29,7 +61,9 @@
 						<a class="forum-link" href={resolve(`/forums/${forum.name}`)}>
 							Forum: {forum.name}
 						</a>
-
+					{#if activeUsersPerForum[forum.id]}
+						<span class="active-users">🟢 {activeUsersPerForum[forum.id]} aktiva</span>
+					{/if}
 						{#if forum.id === editingID}
 							<form action="?/edit" method="POST" class="edit-form" use:enhance>
 								<input type="hidden" name="id" value={forum.id} />
@@ -205,10 +239,22 @@
 		text-decoration: none;
 		margin-bottom: 0.5rem;
 		transition: color 0.2s ease;
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
 	}
 
 	.forum-link:hover {
 		color: #764ba2;
+	}
+
+	.active-users {
+		font-size: 0.85rem;
+		color: #48bb78;
+		font-weight: 600;
+		background: rgba(72, 187, 120, 0.1);
+		padding: 0.25rem 0.75rem;
+		border-radius: 12px;
 	}
 
 	.forum-desc {

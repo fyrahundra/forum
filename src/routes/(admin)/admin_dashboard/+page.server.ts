@@ -14,7 +14,7 @@ export const load: PageServerLoad = async () => {
 	});
 
 	const countries = await Promise.all(
-		activeSessions.map(session => getCountryFromIP(session.ipAddress))
+		activeSessions.map((session) => getCountryFromIP(session.ipAddress))
 	);
 
 	return { activeSessions, countries };

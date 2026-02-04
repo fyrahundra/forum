@@ -6,6 +6,7 @@ import { requireAuth, getUser } from '$lib/auth';
 import { Buffer } from 'buffer';
 import { validateImageFile } from '$lib/validation';
 import { cloudinary } from '$lib/cloudinary';
+import { _broadcastToChannel } from '../../../chat-stream/+server';
 
 export const load: ServerLoad = async ({ params, url, cookies }) => {
 	const user = await getUser(cookies);
@@ -57,12 +58,64 @@ export const load: ServerLoad = async ({ params, url, cookies }) => {
 	};
 };
 
+const userLastMessage = new Map<string, number>();
+
 export const actions = {
-	uploadToFile: async ({ request }) => {},
+	startTyping: async ({ params, cookies, request }) => {
+		const forumName = params.forum;
+		const forum = await prisma.forum.findUnique({ where: { name: forumName } });
+		if (!forum) return fail(404, { error: 'Forum not found' });
+		
+		const data = await request.formData();
+		const userId = data.get('userId')?.toString();
+		const username = data.get('username')?.toString();
+
+		if (!userId && !username) {
+			return fail(400, { error: 'userId is required' });
+		}
+
+		_broadcastToChannel(forum.id, {
+			type: 'typing',
+			user: {
+				id: userId,
+				username: username
+			},
+			timestamp: Date.now()
+		});
+
+		return {
+			success: true
+		};
+	},
+	stopTyping: async ({ params, cookies, request }) => {
+		const forumName = params.forum;
+		const forum = await prisma.forum.findUnique({ where: { name: forumName } });
+		if (!forum) return fail(404, { error: 'Forum not found' });
+		
+		const data = await request.formData();
+		const userId = data.get('userId')?.toString();
+
+		if (!userId) {
+			return fail(400, { error: 'userId is required' });
+		}
+
+		_broadcastToChannel(forum.id, {
+			type: 'stop_typing',
+			user: {
+				id: userId
+			},
+			timestamp: Date.now()
+		});
+
+		return { success: true };
+	},
 	message: async ({ request, params, cookies }) => {
 		// Skapa nytt meddelande med Prisma
 		// Tips: använd connect för att koppla till forum
 		const user = await requireAuth(cookies);
+
+		const lastMessageTime = userLastMessage.get(user.id) || 0;
+
 		const forumName = params.forum;
 		const data = await request.formData();
 		const content = data.get('content')?.toString();
@@ -70,6 +123,13 @@ export const actions = {
 		const userId = user?.id ?? null;
 
 		const attachments = data.getAll('attachment') as File[];
+
+		// Rate limiting: minst 2 sekunder mellan meddelanden
+		if (Date.now() - lastMessageTime < 2000) {
+			return fail(429, { error: 'Du skickar meddelanden för snabbt. Vänta lite innan du skickar igen.' });
+		}
+
+		userLastMessage.set(user.id, Date.now());
 
 		if (!content || !author) {
 			return fail(400, { error: 'Innehåll och författare krävs' });
@@ -140,6 +200,28 @@ export const actions = {
 						console.error('Cloudinary upload error:', error);
 						return fail(500, { success: false, error: `Failed to upload file ${file.name}` });
 					}
+				}
+			}
+
+			// Fetch the full message with images and user data for broadcast
+			const fullMessage = await prisma.message.findUnique({
+				where: { id: message.id },
+				include: {
+					images: true,
+					user: {
+						select: {
+							id: true,
+							username: true,
+							profileImage: true
+						}
+					}
+				}
+			});
+
+			if (fullMessage) {
+				const forum = await prisma.forum.findUnique({ where: { name: forumName } });
+				if (forum) {
+					_broadcastToChannel(forum.id, { type: 'new_message', message: fullMessage });
 				}
 			}
 

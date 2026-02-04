@@ -1,27 +1,323 @@
 <!-- src/routes/forums/[forum]/+page.svelte -->
 <script>
 	import { resolve } from '$app/paths';
-	import { enhance } from '$app/forms';
+	import { applyAction, enhance } from '$app/forms';
 	import { fly } from 'svelte/transition';
 	import { invalidateAll } from '$app/navigation';
+	import { onDestroy } from 'svelte';
+	import { browser } from '$app/environment';
 
 	export let data, form;
 
-	$: liveMessages = data.messages;
+	let messages = [...data.messages];
+	let loadedPages = new Set([data.page]);
+	let currentMinPage = data.page;
+	let currentMaxPage = data.page;
+	let isLoadingTop = false;
+	let isLoadingBottom = false;
+	let topSentinel;
+	let bottomSentinel;
+
+	let connectionStatus = 'Connecting';
+	let connectionAtempts = 0;
+	let maxConnectionAttempts = 5;
+
+	// Update messages from data when forum or page changes
+	let lastForumId = data.forum.id;
+	let lastPage = data.page;
+
+	$: if (data.forum.id !== lastForumId) {
+		lastForumId = data.forum.id;
+		lastPage = data.page;
+		messages = [...data.messages];
+		loadedPages = new Set([data.page]);
+		currentMinPage = data.page;
+		currentMaxPage = data.page;
+		hasNewMessages = false;
+	}
+
 	$: forumName = data.forum.name;
 
 	let editingId = null;
 	let previewUrl = '';
 	let uploading = false;
+	let uploadProgress = 0;
+	let uploadError = '';
 	let images = [];
 	let selectedFiles = [];
 	let fileInput;
 
-	function syncFileInput() {
-		if (!fileInput) return;
-		const dt = new DataTransfer();
-		for (const f of selectedFiles) dt.items.add(f);
-		fileInput.files = dt.files;
+	let isTyping = false;
+	let typingTimeout;
+	let typingUsers = {};
+	let hasNewMessages = false;
+	let topObserver;
+	let bottomObserver;
+	$: typingUsernames = Object.entries(typingUsers)
+		.filter(([id]) => id !== String(data.user?.id))
+		.map(([, username]) => username);
+
+	function setupSSE() {
+		const eventSource = new EventSource(`/chat-stream?channel=${encodeURIComponent(data.forum.id)}`);
+
+		eventSource.onopen = () => {
+			connectionStatus = 'Connected';
+			connectionAtempts = 0;
+		};
+
+		eventSource.onerror = (error) => {
+			connectionStatus = 'Disconnected';
+
+			if (connectionAtempts < maxConnectionAttempts) {
+				connectionStatus = 'Reconnecting...';
+				connectionAtempts++;
+
+				setTimeout(() => {
+					eventSource.close();
+					setupSSE();
+				}, 1000 * connectionAtempts);
+			} else {
+				connectionStatus = 'Failed';
+			}
+		};
+		return eventSource;
+	}
+
+	async function requestNotificationPermission() {
+		if (!('Notification' in window)) {
+			console.log('This browser does not support notifications');
+			return false;
+		}
+
+		if (Notification.permission === 'granted') {
+			return true;
+		}
+
+		if (Notification.permission !== 'denied') {
+			const permission = await Notification.requestPermission();
+			return permission === 'granted';
+		}
+
+		return false;
+	}
+
+	function sendPushNotification(title, options = {}) {
+		if ('Notification' in window) {
+			try {
+				new Notification(title, {
+					icon: '/favicon.svg',
+					...options
+				});
+			} catch (error) {
+				console.error('Error sending notification:', error);
+			}
+		}
+	}
+
+	function handleTyping() {
+		if (!isTyping) {
+			isTyping = true;
+			const formData = new FormData();
+			formData.append('userId', data.user.id);
+			formData.append('username', data.user.username);
+			fetch('?/startTyping', { method: 'POST', body: formData });
+		}
+		clearTimeout(typingTimeout);
+		typingTimeout = setTimeout(() => {
+			isTyping = false;
+			const formData = new FormData();
+			formData.append('userId', data.user.id);
+			fetch('?/stopTyping', { method: 'POST', body: formData });
+		}, 1000);
+	}
+
+	async function loadPreviousPage() {
+		if (isLoadingTop || currentMinPage <= 1) return;
+		isLoadingTop = true;
+		const prevPage = currentMinPage - 1;
+
+		try {
+			const response = await fetch(
+				`/api/messages?forumId=${encodeURIComponent(data.forum.id)}&page=${prevPage}`
+			);
+			const result = await response.json();
+
+			if (result.messages && result.messages.length > 0) {
+				const newMessages = result.messages.map((msg) => ({
+					...msg,
+					createdAt: new Date(msg.createdAt)
+				}));
+				
+				loadedPages.add(prevPage);
+				currentMinPage = prevPage;
+
+				// Unload bottom pages if we've reached the limit
+				if (loadedPages.size > 5) {
+					const pageToRemove = currentMaxPage;
+					const pageSize = 10;
+					// Remove from the end (oldest messages)
+					const messageIds = new Set(newMessages.map(m => m.id));
+					messages = [...newMessages, ...messages.filter(m => !messageIds.has(m.id))].slice(0, -pageSize);
+					loadedPages.delete(pageToRemove);
+					currentMaxPage--;
+				} else {
+					const existingIds = new Set(messages.map(m => m.id));
+					const uniqueNewMessages = newMessages.filter(m => !existingIds.has(m.id));
+					messages = [...uniqueNewMessages, ...messages];
+				}
+			}
+		} catch (error) {
+			console.error('Error loading previous page:', error);
+		} finally {
+			isLoadingTop = false;
+		}
+	}
+
+	async function loadNextPage() {
+		if (isLoadingBottom || currentMaxPage >= data.totalPages) return;
+		isLoadingBottom = true;
+		const nextPage = currentMaxPage + 1;
+
+		try {
+			const response = await fetch(
+				`/api/messages?forumId=${encodeURIComponent(data.forum.id)}&page=${nextPage}`
+			);
+			const result = await response.json();
+
+			if (result.messages && result.messages.length > 0) {
+				const newMessages = result.messages.map((msg) => ({
+					...msg,
+					createdAt: new Date(msg.createdAt)
+				}));
+				
+				loadedPages.add(nextPage);
+				currentMaxPage = nextPage;
+
+				// Unload top pages if we've reached the limit
+				if (loadedPages.size > 5) {
+					const pageToRemove = currentMinPage;
+					const pageSize = 10;
+					// Remove from the beginning (newest messages)
+					const messageIds = new Set(newMessages.map(m => m.id));
+					messages = [...messages.filter(m => !messageIds.has(m.id)), ...newMessages].slice(pageSize);
+					loadedPages.delete(pageToRemove);
+					currentMinPage++;
+				} else {
+					const existingIds = new Set(messages.map(m => m.id));
+					const uniqueNewMessages = newMessages.filter(m => !existingIds.has(m.id));
+					messages = [...messages, ...uniqueNewMessages];
+				}
+			}
+		} catch (error) {
+			console.error('Error loading next page:', error);
+		} finally {
+			isLoadingBottom = false;
+		}
+	}
+
+	if (browser) {
+		// Request notification permission
+		requestNotificationPermission();
+
+		// Din uppgift: Skapa EventSource connection
+		const eventSource = setupSSE();
+
+		eventSource.onmessage = (event) => {
+			// Vad ska hända när meddelande tas emot?
+			// Tips: JSON.parse(event.data)
+			// Tips: Uppdatera messages array
+			const data = JSON.parse(event.data);
+
+			switch (data.type) {
+				case 'connect':
+					console.log('SSE Connected:', data.message);
+					return;
+				case 'typing':
+					// Hantera typing-indikator här om du vill
+					typingUsers[data.user.id] = data.user.username;
+					typingUsers = { ...typingUsers };
+					break;
+				case 'stop_typing':
+					// Hantera stop_typing här om du vill
+					delete typingUsers[data.user.id];
+					typingUsers = { ...typingUsers };
+					break;
+				case 'new_message':
+					// Convert createdAt string to Date object
+					data.message.createdAt = new Date(data.message.createdAt);
+				// Only add message if on first page
+				if (currentMinPage === 1) {
+					if (!messages.some(m => m.id === data.message.id)) {
+						messages = [data.message, ...messages];
+					}
+				} else {
+					hasNewMessages = true;
+				}
+				// Send push notification for new message to other users
+				const authorId = data.message.user?.id;
+				const currentUserId = data.user?.id;
+				console.log('Message received - Author ID:', authorId, 'Current User ID:', currentUserId, 'Should notify:', authorId !== currentUserId);
+				if (authorId !== currentUserId) {
+					console.log('Sending notification...');
+					sendPushNotification('🔔 Nytt meddelande', {
+						body: `${data.message.author}: ${data.message.content.substring(0, 50)}${data.message.content.length > 50 ? '...' : ''}`
+					});
+				} else {
+					console.log('Not sending notification - same user');
+				}
+					break;
+				case 'initial_messages':
+					// Convert createdAt strings to Date objects
+					const initialMessages = data.messages.map((msg) => {
+						return { ...msg, createdAt: new Date(msg.createdAt) };
+					});
+					messages = initialMessages;
+					break;
+				default:
+					console.warn('Unknown SSE message type:', data.type);
+			}
+		};
+
+		eventSource.onerror = (error) => {
+			// Vad ska hända vid fel?
+			// Tips: Uppdatera connectionStatus
+			connectionStatus = 'Disconnected';
+		};
+
+		// Viktigt: Stäng connection när komponenten förstörs
+		onDestroy(() => {
+			// Din kod här
+			eventSource.close();
+			if (topObserver) topObserver.disconnect();
+			if (bottomObserver) bottomObserver.disconnect();
+		});
+	}
+
+	// Setup intersection observers for infinite scroll with reactive statements
+	$: if (browser && topSentinel) {
+		if (topObserver) topObserver.disconnect();
+		topObserver = new IntersectionObserver(
+			(entries) => {
+				if (entries[0].isIntersecting) {
+					loadPreviousPage();
+				}
+			},
+			{ threshold: 0.1 }
+		);
+		topObserver.observe(topSentinel);
+	}
+
+	$: if (browser && bottomSentinel) {
+		if (bottomObserver) bottomObserver.disconnect();
+		bottomObserver = new IntersectionObserver(
+			(entries) => {
+				if (entries[0].isIntersecting) {
+					loadNextPage();
+				}
+			},
+			{ threshold: 0.1 }
+		);
+		bottomObserver.observe(bottomSentinel);
 	}
 
 	function handleFileSelect(event) {
@@ -58,6 +354,69 @@
 
 		syncFileInput();
 	}
+
+	function syncFileInput() {
+		if (!fileInput) return;
+		const dataTransfer = new DataTransfer();
+		for (const file of selectedFiles) {
+			dataTransfer.items.add(file);
+		}
+		fileInput.files = dataTransfer.files;
+	}
+
+	function handleMessageSubmit(event) {
+		event.preventDefault();
+		if (uploading) return;
+
+		const formEl = event.currentTarget;
+		const formData = new FormData(formEl);
+
+		uploading = true;
+		uploadProgress = 0;
+		uploadError = '';
+
+		const xhr = new XMLHttpRequest();
+		xhr.open(formEl.method || 'POST', formEl.action);
+		xhr.setRequestHeader('Accept', 'application/json');
+
+		xhr.upload.onprogress = (e) => {
+			if (e.lengthComputable) {
+				uploadProgress = Math.round((e.loaded / e.total) * 100);
+			}
+		};
+
+		xhr.onload = async () => {
+			uploading = false;
+			uploadProgress = 0;
+
+			let result;
+			try {
+				result = JSON.parse(xhr.responseText);
+				await applyAction(result);
+			} catch (error) {
+				console.error('Failed to apply action result', error);
+			}
+
+			if (result?.type === 'success' || (xhr.status >= 200 && xhr.status < 300)) {
+				images = [];
+				selectedFiles = [];
+				previewUrl = '';
+				if (fileInput) fileInput.value = '';
+				const messageField = formEl.querySelector('textarea[name="content"]');
+				if (messageField) messageField.value = '';
+			} else {
+				uploadError = result?.data?.error ?? 'Uppladdningen misslyckades. Försök igen.';
+			}
+		};
+
+		xhr.onerror = () => {
+			uploading = false;
+			uploadProgress = 0;
+			uploadError = 'Nätverksfel. Kontrollera anslutningen och försök igen.';
+		};
+
+		xhr.send(formData);
+	}
 </script>
 
 <div class="container">
@@ -67,13 +426,53 @@
 			<a href={resolve('/forums')}>Alla Forum</a> <span>/</span>
 			{forumName}
 		</nav>
+		<div class="connection-indicator">
+			Connection status:
+			{#if connectionStatus === 'Connected'}
+				🟢
+			{:else if connectionStatus === 'Reconnecting...'}
+				🟡 Reconnecting...
+			{:else if connectionStatus === 'Connecting'}
+				🟡 Connecting...
+			{:else if connectionStatus === 'Disconnected'}
+				🔴
+			{:else if connectionStatus === 'Failed'}
+				⚠️
+			{/if}
+		</div>
 	</header>
 
 	<div class="content-wrapper">
 		<section class="messages-section">
-			<h2>Meddelanden ({liveMessages.length})</h2>
+			{#if hasNewMessages}
+				<div class="new-messages-notification">
+					<p>🔔 Nya meddelanden har lagts till på sidan 1</p>
+					<a href={resolve(`/forums/${data.forum.name}?page=1`)}>Gå till sidan 1</a>
+				</div>
+			{/if}
+			<div
+				style="display: flex; flex-direction: row; gap: 0.5rem; margin-bottom: 1rem; align-items: center;"
+			>
+				<h2>Meddelanden ({messages.length})</h2>
+				{#if typingUsernames.length > 0}
+					<p>
+						{typingUsernames.length === 1
+							? `${typingUsernames.length} person skriver...`
+							: `${typingUsernames.length} personer skriver...`}
+					</p>
+				{/if}
+			</div>
 			<div class="messages-list">
-				{#each liveMessages as message (message.id)}
+				<!-- Top sentinel for loading previous pages -->
+				{#if currentMinPage > 1}
+					<div bind:this={topSentinel} class="scroll-sentinel">
+						{#if isLoadingTop}
+							<p class="loading-indicator">Laddar tidigare meddelanden...</p>
+						{/if}
+					</div>
+				{/if}
+
+				{#each messages as message (message.id)}
 					<div class="message" in:fly={{ y: 20 }}>
 						{#if data.user && editingId === message.id}
 							<form
@@ -152,21 +551,16 @@
 						{/if}
 					</div>
 				{/each}
-			</div>
 
-			<nav class="pagination">
-				{#if data.page > 1}
-					<a href={resolve(`/forums/${data.forum.name}?page=${data.page - 1}`)}>Föregående</a>
-				{:else}
-					<span>Föregående</span>
+				<!-- Bottom sentinel for loading next pages -->
+				{#if currentMaxPage < data.totalPages}
+					<div bind:this={bottomSentinel} class="scroll-sentinel">
+						{#if isLoadingBottom}
+							<p class="loading-indicator">Laddar fler meddelanden...</p>
+						{/if}
+					</div>
 				{/if}
-				<span>Sida {data.page} av {data.totalPages}</span>
-				{#if data.page < data.totalPages}
-					<a href={resolve(`/forums/${data.forum.name}?page=${data.page + 1}`)}>Nästa</a>
-				{:else}
-					<span>Nästa</span>
-				{/if}
-			</nav>
+			</div>
 		</section>
 
 		{#if data.user}
@@ -180,20 +574,11 @@
 					action="?/message"
 					class="create-message-form"
 					enctype="multipart/form-data"
-					use:enhance={() => {
-						uploading = true;
-						return async ({ update }) => {
-							uploading = false;
-							images = [];
-							selectedFiles = [];
-							previewUrl = '';
-							await update();
-						};
-					}}
+					on:submit={handleMessageSubmit}
 				>
 					<h3>Nytt meddelande</h3>
 
-					<textarea name="content" required placeholder="Ditt meddelande..."
+					<textarea name="content" required placeholder="Ditt meddelande..." on:input={handleTyping}
 						>{form?.content ?? ''}</textarea
 					>
 					{#if previewUrl}
@@ -215,10 +600,19 @@
 						on:change={handleFileSelect}
 						bind:this={fileInput}
 					/>
+					{#if uploading}
+						<div class="progress">
+							<div class="progress-bar" style={`width: ${uploadProgress}%`}></div>
+						</div>
+						<p class="progress-text">{uploadProgress}%</p>
+					{/if}
+					{#if uploadError}
+						<p class="error">{uploadError}</p>
+					{/if}
 					<button type="submit" disabled={uploading}>{uploading ? 'Skickar...' : 'Skicka'}</button>
 				</form>
 
-				<form method="GET" action="" class="search-form" use:enhance>
+				<form method="GET" action="" class="search-form">
 					<h3>Sök</h3>
 					<input type="text" name="filter" placeholder="Sök meddelanden..." autocomplete="off" />
 					<button type="submit">Sök</button>
@@ -253,6 +647,60 @@
 		border-radius: 12px;
 		box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
 		text-align: center;
+	}
+
+	.connection-indicator {
+		margin-top: 0.5rem;
+		font-size: 0.7rem;
+		color: #4a5568;
+	}
+
+	.new-messages-notification {
+		background: #f7fafc;
+		border: 1px solid #cbd5e0;
+		border-left: 3px solid #667eea;
+		color: #4a5568;
+		padding: 0.75rem 1rem;
+		border-radius: 8px;
+		margin-bottom: 1rem;
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+		animation: slideDown 0.3s ease;
+	}
+
+	.new-messages-notification p {
+		margin: 0;
+		font-weight: 500;
+		font-size: 0.9rem;
+	}
+
+	.new-messages-notification a {
+		color: #667eea;
+		background: rgba(102, 126, 234, 0.1);
+		padding: 0.4rem 0.8rem;
+		border-radius: 6px;
+		text-decoration: none;
+		font-weight: 500;
+		font-size: 0.85rem;
+		transition: all 0.2s ease;
+	}
+
+	.new-messages-notification a:hover {
+		background: rgba(102, 126, 234, 0.15);
+		transform: translateY(-1px);
+	}
+
+	@keyframes slideDown {
+		from {
+			opacity: 0;
+			transform: translateY(-20px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
 	}
 
 	h1 {
@@ -497,6 +945,20 @@
 		color: #a0aec0;
 	}
 
+	.scroll-sentinel {
+		height: 50px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+
+	.loading-indicator {
+		color: #a0aec0;
+		font-size: 0.9rem;
+		font-style: italic;
+		margin: 0;
+	}
+
 	.error {
 		color: #e53e3e;
 		background-color: #fff5f5;
@@ -507,10 +969,32 @@
 		font-size: 0.9rem;
 	}
 
+	.progress {
+		width: 100%;
+		height: 10px;
+		background: #e2e8f0;
+		border-radius: 999px;
+		overflow: hidden;
+		margin: 0.5rem 0 0.25rem;
+	}
+
+	.progress-bar {
+		height: 100%;
+		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+		transition: width 0.2s ease;
+	}
+
+	.progress-text {
+		text-align: center;
+		color: #4a5568;
+		font-size: 0.9rem;
+		margin: 0 0 0.5rem;
+	}
+
 	.create-message-form,
 	.search-form {
 		background: white;
-		padding: 1.5rem;
+		padding: 1.3rem;
 		border-radius: 16px;
 		box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
 	}
